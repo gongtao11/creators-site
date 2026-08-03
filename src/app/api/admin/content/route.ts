@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
-/**
- * GET /api/admin/content - 鑾峰彇鎵€鏈夊唴瀹? * POST /api/admin/content - 鍒涘缓鏂板唴瀹? * PUT /api/admin/content - 鏇存柊鍐呭
- * DELETE /api/admin/content - 鍒犻櫎鍐呭
- */
+
 
 export async function GET() {
   try {
