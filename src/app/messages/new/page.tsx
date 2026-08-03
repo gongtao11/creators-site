@@ -57,11 +57,11 @@ export default function NewMessagePage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white text-lg">
-            馃挄
+            💕
           </div>
           <div>
             <p className="font-semibold text-sm">Chat with me</p>
-            <p className="text-xs text-green-500">Replies instantly 馃拫</p>
+            <p className="text-xs text-green-500">Replies instantly 💋</p>
           </div>
         </div>
 
