@@ -33,7 +33,7 @@ export function MessageBubble({ message, isOwn }: Props) {
         >
           {formatTime(message.created_at)}
           {message.is_ai && (
-            <span className="ml-1" title="Auto-reply">馃</span>
+            <span className="ml-1" title="Auto-reply">🤖</span>
           )}
         </span>
       </div>
