@@ -16,7 +16,8 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // 婊氬姩鍒板簳閮?  useEffect(() => {
+  
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -24,7 +25,8 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
     async (content: string) => {
       setLoading(true);
 
-      // 涔愯鏇存柊锛氭坊鍔犵敤鎴锋秷鎭?      const tempUserMsg: Message = {
+      
+      const tempUserMsg: Message = {
         id: `temp-${Date.now()}`,
         sender_id: currentUserId,
         receiver_id: currentUserId,
@@ -46,7 +48,7 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
 
         const data = await res.json();
 
-        // 鏇挎崲涓存椂娑堟伅 + 娣诲姞 AI 鍥炲
+        
         setMessages((prev) => {
           const without = prev.filter((m) => m.id !== tempUserMsg.id);
           return [
@@ -65,7 +67,7 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
         });
       } catch (error) {
         console.error("Send message failed:", error);
-        // 鏍囪涓存椂娑堟伅澶辫触
+        
         setMessages((prev) =>
           prev.map((m) =>
             m.id === tempUserMsg.id
@@ -82,13 +84,13 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 娑堟伅鍒楄〃 */}
+      {/* 消息列表 */}
       <div className="flex-1 overflow-y-auto p-4 space-y-1">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center text-zinc-400 dark:text-zinc-500">
-            <div className="text-4xl mb-3">馃挰</div>
+            <div className="text-4xl mb-3">💬</div>
             <p className="text-sm font-medium">Start a conversation!</p>
-            <p className="text-xs mt-1">Send me a message and I'll reply right away 馃挄</p>
+            <p className="text-xs mt-1">Send me a message and I'll reply right away 💕</p>
           </div>
         )}
 
@@ -116,7 +118,7 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* 杈撳叆妗?*/}
+      {/* 输入框 */}
       <ChatInput onSend={handleSend} disabled={loading} />
     </div>
   );
