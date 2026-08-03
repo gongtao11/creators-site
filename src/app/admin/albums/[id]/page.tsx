@@ -66,17 +66,28 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
   const uploadMore = async () => {
     if (files.length === 0) return;
     setUploading(true);
-    const CHUNK_SIZE = 3;
-    let done = 0;
+    const urls: string[] = [];
 
-    for (let i = 0; i < files.length; i += CHUNK_SIZE) {
-      const chunk = files.slice(i, i + CHUNK_SIZE);
-      const fd = new FormData();
-      chunk.forEach(f => fd.append("files", f));
-      fd.append("album_id", id);
-      fd.append("start_index", String(images.length + i));
-      setProgress(Math.round((i / files.length) * 95));
-      await fetch("/api/admin/album-images", { method: "POST", body: fd });
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setProgress(Math.round((i / files.length) * 90));
+      try {
+        const ext = file.name.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("content").upload(fileName, file, {
+          contentType: file.type || "image/jpeg", cacheControl: "3600", upsert: false,
+        });
+        if (upErr) throw new Error(upErr.message);
+        const { data: urlData } = supabase.storage.from("content").getPublicUrl(fileName);
+        urls.push(urlData.publicUrl);
+      } catch { continue; }
+    }
+
+    if (urls.length > 0) {
+      await fetch("/api/admin/add-image", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId: id, urls, startIndex: images.length }),
+      });
     }
 
     setProgress(100);
