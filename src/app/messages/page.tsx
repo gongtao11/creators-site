@@ -35,7 +35,7 @@ export default function MessagesPage() {
 
       setProfile(profileData as Profile | null);
 
-      // 鑾峰彇娑堟伅 (閫氳繃 API)
+      
       try {
         const res = await fetch("/api/messages");
         if (res.ok) {
@@ -62,7 +62,7 @@ export default function MessagesPage() {
     );
   }
 
-  // 娌℃湁浼氳瘽鏃剁殑榛樿鍏ュ彛
+  
   const hasConversations = conversations.length > 0;
 
   return (
@@ -88,14 +88,14 @@ export default function MessagesPage() {
         </div>
 
         {!hasConversations ? (
-          /* 娌℃湁浼氳瘽锛氭樉绀烘柊瀵硅瘽鍏ュ彛 */
+          /* 没有会话：显示新对话入口 */
           <div className="text-center py-16">
             <div className="w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-950 flex items-center justify-center mx-auto mb-6">
               <MessageCircle className="w-10 h-10 text-pink-500" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Start a Conversation</h2>
             <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6 max-w-xs mx-auto">
-              Send me a message! I reply to every fan personally (with a little AI help 馃槈)
+              Send me a message! I reply to every fan personally (with a little AI help 😉)
             </p>
             <Link
               href="/messages/new"
@@ -106,7 +106,7 @@ export default function MessagesPage() {
             </Link>
           </div>
         ) : (
-          /* 浼氳瘽鍒楄〃 */
+          /* 会话列表 */
           <div className="space-y-1">
             {conversations.map((conv) => (
               <Link
@@ -115,7 +115,7 @@ export default function MessagesPage() {
                 className="flex items-center gap-3 p-4 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
               >
                 <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                  {conv.userId === "ai" ? "馃挄" : conv.userId[0]?.toUpperCase()}
+                  {conv.userId === "ai" ? "💕" : conv.userId[0]?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
