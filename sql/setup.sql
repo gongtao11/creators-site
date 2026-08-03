@@ -1,0 +1,6 @@
+-- Run this in Supabase SQL Editor
+CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS tx_hash TEXT;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS amount DECIMAL(10,2);
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS crypto_type TEXT;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS content_title TEXT;
