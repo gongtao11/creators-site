@@ -52,16 +52,15 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           if (!found.price) setHasAccess(true);
         }
 
-        // Check purchase
+        // Check purchase - query user's purchases directly
         if (user && found && found.price) {
-          const purchasesRes = await fetch(`/api/admin/verify-purchase`);
-          if (purchasesRes.ok) {
-            const purData = await purchasesRes.json();
-            const bought = (purData.purchases || []).some(
-              (p: any) => p.user_id === user.id && p.content_id === id && p.status === "active"
-            );
-            if (!cancelled && bought) setHasAccess(true);
-          }
+          const { data: purchases } = await supabase
+            .from("purchases")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("content_id", id)
+            .eq("status", "active");
+          if (!cancelled && purchases && purchases.length > 0) setHasAccess(true);
         }
 
         // Load images via API
