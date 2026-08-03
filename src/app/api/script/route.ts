@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { updateScript, loadScript } from "@/lib/script-loader";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
-/**
- * GET /api/script
- * 鑾峰彇褰撳墠璇濇湳鍐呭 (绠＄悊鍛樼敤)
- */
+
 export async function GET(request: NextRequest) {
   try {
     const token =
@@ -24,7 +21,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 妫€鏌ユ槸鍚︽槸绠＄悊鍛?    const { data: profile } = await supabaseAdmin
+    
+    const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
@@ -45,10 +43,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * PUT /api/script
- * 鏇存柊璇濇湳鍐呭 (绠＄悊鍛樼敤)
- */
+
 export async function PUT(request: NextRequest) {
   try {
     const token =
