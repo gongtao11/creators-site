@@ -2,18 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Save, Wallet, Loader2, CheckCircle } from "lucide-react";
+import { AuthGuard } from "@/components/layout/AuthGuard";
+import { StableButton } from "@/components/layout/StableButton";
+import { ArrowLeft, Wallet } from "lucide-react";
 import type { Profile } from "@/types";
 
 const DEFAULT_WALLETS: Record<string, string> = {
-  BTC: "",
-  ETH: "",
-  "USDT-TRC20": "",
-  "USDT-ERC20": "",
-  BNB: "",
-  SOL: "",
+  BTC: "", ETH: "", "USDT-TRC20": "", "USDT-ERC20": "", BNB: "", SOL: "",
 };
 
 const WALLET_LABELS: Record<string, string> = {
@@ -26,55 +22,71 @@ const WALLET_LABELS: Record<string, string> = {
 };
 
 export default function AdminWalletPage() {
+  return (
+    <AuthGuard requireAdmin fallbackPath="/">
+      <WalletContent />
+    </AuthGuard>
+  );
+}
+
+function WalletContent() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [wallets, setWallets] = useState<Record<string, string>>({ ...DEFAULT_WALLETS });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = "/login"; return; }
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-      if (!(p as Profile)?.is_admin) { window.location.href = "/"; return; }
-      setProfile(p as Profile);
-
+    let cancelled = false;
+    (async () => {
       try {
+        const { data: { user } } = await (await import("@/lib/supabase")).supabase.auth.getUser();
+        if (user && !cancelled) {
+          const { data: p } = await (await import("@/lib/supabase")).supabase.from("profiles").select("*").eq("id", user.id).single();
+          if (!cancelled) setProfile(p as Profile);
+        }
         const res = await fetch("/api/admin/wallet");
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const d = await res.json();
           if (d.wallets && Object.keys(d.wallets).length > 0) {
             setWallets(prev => ({ ...prev, ...d.wallets }));
           }
         }
-      } catch { }
-      setLoading(false);
-    }
-    load();
+      } catch {}
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
-    setSaved(false);
-    for (const [key, value] of Object.entries(wallets)) {
-      if (value.trim()) {
-        await fetch("/api/admin/wallet", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, value: value.trim() }),
-        });
+    try {
+      for (const [key, value] of Object.entries(wallets)) {
+        if (value.trim()) {
+          await fetch("/api/admin/wallet", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ key, value: value.trim() }),
+          });
+        }
       }
-    }
+      setSaved(true);
+    } catch {}
     setSaving(false);
-    setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+      <div className="min-h-screen flex flex-col">
+        <Navbar user={null} />
+        <div className="flex-1 flex items-center justify-center">
+          <svg className="w-8 h-8 animate-spin text-pink-500" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
       </div>
     );
   }
@@ -86,13 +98,10 @@ export default function AdminWalletPage() {
         <Link href="/admin" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 mb-4">
           <ArrowLeft className="w-3 h-3" /> Admin
         </Link>
-
         <h1 className="text-2xl font-bold mb-2">Crypto Wallet Settings</h1>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8">
-          Users will send crypto payments to these addresses. USDT has two networks - fill one or both.
-        </p>
+        <p className="text-zinc-500 text-sm mb-8">Users send payments to these addresses. USDT has separate TRC20 and ERC20 networks.</p>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-5">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border p-6 space-y-5">
           {Object.entries(wallets).map(([crypto, address]) => (
             <div key={crypto}>
               <label className="block text-sm font-medium mb-1.5 text-zinc-700 dark:text-zinc-300">
@@ -103,22 +112,16 @@ export default function AdminWalletPage() {
                 <input
                   type="text"
                   value={address}
-                  onChange={(e) => setWallets({ ...wallets, [crypto]: e.target.value })}
+                  onChange={e => setWallets(prev => ({ ...prev, [crypto]: e.target.value }))}
                   placeholder={`Your ${WALLET_LABELS[crypto] || crypto} address`}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-pink-500/50"
                 />
               </div>
             </div>
           ))}
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-3 rounded-full font-medium text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+          <StableButton onClick={handleSave} loading={saving} className="w-full">
             {saved ? "Saved!" : "Save Wallet Addresses"}
-          </button>
+          </StableButton>
         </div>
       </main>
     </div>
