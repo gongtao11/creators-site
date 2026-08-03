@@ -24,7 +24,7 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      // 鐢?window.location 璺宠浆锛岄伩鍏?router.refresh 鐨?DOM 鍐茬獊
+      
       window.location.href = "/";
     } catch (err: unknown) {
       const message =
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 鍐呰仈瀵艰埅 */}
+      {/* 内联导航 */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
           <Link
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50"
-                  placeholder="鈥⑩€⑩€⑩€⑩€⑩€⑩€⑩€?
+                  placeholder="••••••••"
                 />
               </div>
             </div>
