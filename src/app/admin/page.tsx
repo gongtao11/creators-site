@@ -12,6 +12,8 @@ import {
   Users,
   ArrowRight,
   Loader2,
+  Wallet,
+  CheckCircle,
 } from "lucide-react";
 import type { Profile } from "@/types";
 
@@ -82,11 +84,18 @@ export default function AdminPage() {
       color: "text-green-500 bg-green-50 dark:bg-green-950",
     },
     {
-      title: "Profile & Purchases",
-      description: "View your profile and purchase history",
-      href: "/profile",
-      icon: Users,
+      title: "Crypto Wallets",
+      description: "Set your crypto wallet addresses for payments",
+      href: "/admin/wallet",
+      icon: Wallet,
       color: "text-orange-500 bg-orange-50 dark:bg-orange-950",
+    },
+    {
+      title: "Verify Purchases",
+      description: "Approve or reject crypto payments",
+      href: "/admin/purchases",
+      icon: CheckCircle,
+      color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950",
     },
   ];
 
