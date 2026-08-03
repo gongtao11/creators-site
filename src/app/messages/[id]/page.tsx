@@ -39,7 +39,7 @@ export default function ChatPage({
 
       setProfile(profileData as Profile | null);
 
-      // 加载该会话的消息
+      
       const { data: messagesData } = await supabase
         .from("messages")
         .select("*")
