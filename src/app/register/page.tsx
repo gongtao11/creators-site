@@ -18,7 +18,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 璋冪敤鍚庣 API 鐢?admin 鏉冮檺娉ㄥ唽锛堢粫杩囬偖浠堕檺鍒讹級
+      
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,7 +29,8 @@ export default function RegisterPage() {
 
       if (!res.ok) throw new Error(result.error || "Registration failed");
 
-      // 娉ㄥ唽鎴愬姛鍚庤嚜鍔ㄧ櫥褰?      const { error: loginError } = await supabase.auth.signInWithPassword({
+      
+      const { error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -48,7 +49,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* 鍐呰仈瀵艰埅锛岄伩鍏?Navbar 缁勪欢鐨勫鏉備緷璧?*/}
+      {/* 内联导航，避免 Navbar 组件的复杂依赖 */}
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
           <Link
