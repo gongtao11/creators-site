@@ -96,6 +96,7 @@ export default function AdminPurchasesPage() {
                     </div>
 
                     <div className="text-xs text-zinc-500 space-y-0.5">
+                      <p className="font-medium text-zinc-700 dark:text-zinc-300">User: {p.user_email || "Unknown"}</p>
                       <p>Crypto: {p.crypto_type || "N/A"} &middot; ${p.amount || "N/A"}</p>
                       {p.tx_hash && (
                         <p className="font-mono truncate">
