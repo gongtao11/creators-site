@@ -86,8 +86,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   }, [id]);
 
   const walletAddress = wallets[selectedCrypto] || "";
-  const cryptoList = Object.keys(wallets).length > 0 ? Object.keys(wallets) : ["BTC", "ETH", "USDT"];
-  const icons: Record<string, string> = { BTC: "₿", ETH: "Ξ", USDT: "₮" };
+  const cryptoList = Object.keys(wallets).length > 0 ? Object.keys(wallets) : ["BTC", "ETH", "USDT-TRC20", "USDT-ERC20"];
+  const cryptoLabels: Record<string, string> = {
+    BTC: "BTC", ETH: "ETH", "USDT-TRC20": "USDT (TRC20)", "USDT-ERC20": "USDT (ERC20)", BNB: "BNB", SOL: "SOL"
+  };
+  const icons: Record<string, string> = { BTC: "₿", ETH: "Ξ", "USDT-TRC20": "₮", "USDT-ERC20": "₮", BNB: "⚡", SOL: "◎" };
 
   const submitPayment = async () => {
     if (!txHash.trim()) { setPayMessage("Enter transaction hash"); return; }
@@ -176,7 +179,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
               <h2 className="text-lg font-bold mb-1">Pay ${album.price} with Crypto</h2>
               <p className="text-xs text-zinc-400 mb-4">{album.title}</p>
-              <div className="flex gap-1 mb-3 flex-wrap">{cryptoList.map(c => <button key={c} onClick={() => setSelectedCrypto(c)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${selectedCrypto === c ? "bg-pink-500 text-white" : "bg-zinc-100 dark:bg-zinc-800"}`}>{icons[c] || c} {c}</button>)}</div>
+              <div className="flex gap-1 mb-3 flex-wrap">{cryptoList.map(c => <button key={c} onClick={() => setSelectedCrypto(c)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${selectedCrypto === c ? "bg-pink-500 text-white" : "bg-zinc-100 dark:bg-zinc-800"}`}>{icons[c] || ""} {cryptoLabels[c] || c}</button>)}</div>
               {walletAddress ? (
                 <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 mb-3">
                   <p className="text-xs text-zinc-400 mb-1">Send ${album.price} {selectedCrypto} to:</p>
