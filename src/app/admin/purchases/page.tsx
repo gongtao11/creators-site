@@ -33,6 +33,9 @@ export default function AdminPurchasesPage() {
       await loadPurchases();
     }
     load();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadPurchases, 30000);
+    return () => clearInterval(interval);
   }, [loadPurchases]);
 
   const updateStatus = async (purchaseId: string, status: string) => {
