@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X, Play } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X, Play, ExternalLink } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -135,15 +135,21 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
               <div key={img.id} className="group bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
                 {album.type === "video" ? (
                   <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-3 p-2">
-                    <a
-                      href={img.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      href={`/watch?url=${encodeURIComponent(img.url)}&title=${encodeURIComponent(`${album!.title} #${idx + 1}`)}`}
                       className="flex flex-col items-center gap-2 text-center hover:scale-105 transition-transform"
                     >
                       <Play className="w-12 h-12 text-pink-500" />
                       <span className="text-white text-xs font-medium">Video #{idx + 1}</span>
-                      <span className="text-pink-400 text-[10px] underline">Open in new tab ↗</span>
+                      <span className="text-pink-400 text-[10px] underline">Watch ↙</span>
+                    </Link>
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-zinc-500 text-[9px] hover:text-zinc-300 flex items-center gap-0.5"
+                    >
+                      <ExternalLink className="w-2.5 h-2.5" /> Raw file
                     </a>
                     <button
                       onClick={() => deleteImage(img.id)}
