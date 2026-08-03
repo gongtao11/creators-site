@@ -7,12 +7,28 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ArrowLeft, Save, Wallet, Loader2, CheckCircle } from "lucide-react";
 import type { Profile } from "@/types";
 
+const DEFAULT_WALLETS: Record<string, string> = {
+  BTC: "",
+  ETH: "",
+  "USDT-TRC20": "",
+  "USDT-ERC20": "",
+  BNB: "",
+  SOL: "",
+};
+
+const WALLET_LABELS: Record<string, string> = {
+  BTC: "Bitcoin (BTC)",
+  ETH: "Ethereum (ETH)",
+  "USDT-TRC20": "USDT-TRC20 (TRON network)",
+  "USDT-ERC20": "USDT-ERC20 (Ethereum network)",
+  BNB: "Binance Coin (BNB / BSC)",
+  SOL: "Solana (SOL)",
+};
+
 export default function AdminWalletPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [wallets, setWallets] = useState<Record<string, string>>({
-    BTC: "", ETH: "", USDT: "", BNB: "", SOL: "",
-  });
+  const [wallets, setWallets] = useState<Record<string, string>>({ ...DEFAULT_WALLETS });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -29,7 +45,7 @@ export default function AdminWalletPage() {
         if (res.ok) {
           const d = await res.json();
           if (d.wallets && Object.keys(d.wallets).length > 0) {
-            setWallets((prev) => ({ ...prev, ...d.wallets }));
+            setWallets(prev => ({ ...prev, ...d.wallets }));
           }
         }
       } catch { }
@@ -73,14 +89,14 @@ export default function AdminWalletPage() {
 
         <h1 className="text-2xl font-bold mb-2">Crypto Wallet Settings</h1>
         <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-8">
-          Users will send crypto payments to these addresses
+          Users will send crypto payments to these addresses. USDT has two networks - fill one or both.
         </p>
 
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-5">
           {Object.entries(wallets).map(([crypto, address]) => (
             <div key={crypto}>
               <label className="block text-sm font-medium mb-1.5 text-zinc-700 dark:text-zinc-300">
-                {crypto} Wallet Address
+                {WALLET_LABELS[crypto] || crypto}
               </label>
               <div className="relative">
                 <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
@@ -88,7 +104,7 @@ export default function AdminWalletPage() {
                   type="text"
                   value={address}
                   onChange={(e) => setWallets({ ...wallets, [crypto]: e.target.value })}
-                  placeholder={`Your ${crypto} address (e.g. 0x... or bc1...)`}
+                  placeholder={`Your ${WALLET_LABELS[crypto] || crypto} address`}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-pink-500/50"
                 />
               </div>
