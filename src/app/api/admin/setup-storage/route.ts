@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
-/**
- * POST /api/admin/setup-storage
- * 鍒涘缓 content 瀛樺偍妗? */
+
 export async function POST(_request: NextRequest) {
   try {
-    // 灏濊瘯鍒涘缓瀛樺偍妗?    const { data: buckets, error: listError } =
+    
+    const { data: buckets, error: listError } =
       await supabaseAdmin.storage.listBuckets();
 
     if (listError) {
