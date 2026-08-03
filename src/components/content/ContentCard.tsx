@@ -12,7 +12,7 @@ export function ContentCard({ content }: Props) {
 
   return (
     <Link
-      href={`/content/${content.id}`}
+      href={`/album/${content.id}`}
       className="group block rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all"
     >
       {/* 预览图 */}
