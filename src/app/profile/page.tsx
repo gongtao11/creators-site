@@ -26,7 +26,7 @@ export default function ProfilePage() {
 
       setUserEmail(user.email || "");
 
-      // 鍔犺浇 profile
+      
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -35,7 +35,7 @@ export default function ProfilePage() {
 
       setProfile(profileData as Profile | null);
 
-      // 鍔犺浇璐拱璁板綍
+      
       const { data: purchasesData } = await supabase
         .from("purchases")
         .select("*")
@@ -67,7 +67,7 @@ export default function ProfilePage() {
       />
 
       <main className="flex-1 max-w-2xl mx-auto px-4 py-8 w-full">
-        {/* 涓汉淇℃伅鍗＄墖 */}
+        {/* 个人信息卡片 */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white text-3xl font-bold">
@@ -104,7 +104,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 璐拱璁板綍 */}
+        {/* 购买记录 */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 mb-6">
           <h2 className="font-semibold flex items-center gap-2 mb-4">
             <ShoppingBag className="w-4 h-4 text-pink-500" />
@@ -119,7 +119,8 @@ export default function ProfilePage() {
                 href="/"
                 className="mt-3 inline-block text-sm text-pink-500 hover:text-pink-600 font-medium"
               >
-                Browse content 鈫?              </Link>
+                Browse content →
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
@@ -152,7 +153,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 閫€鍑虹櫥褰?*/}
+        {/* 退出登录 */}
         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
           <button
             onClick={async () => {
