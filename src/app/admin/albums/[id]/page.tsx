@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X, Play, ExternalLink } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X, Play } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -61,10 +61,16 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
       const file = files[i];
       setProgress(Math.round((i / files.length) * 90));
       try {
-        const ext = file.name.split(".").pop() || "jpg";
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const fn = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const mimeMap: Record<string, string> = {
+          mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", avi: "video/x-msvideo",
+          mkv: "video/x-matroska", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+          gif: "image/gif", webp: "image/webp",
+        };
+        const ct = (file.type && file.type !== "application/octet-stream") ? file.type : (mimeMap[ext] || "application/octet-stream");
         const { error } = await supabase.storage.from("content").upload(fn, file, {
-          contentType: file.type || "image/jpeg", cacheControl: "3600", upsert: false,
+          contentType: ct, cacheControl: "3600", upsert: false,
         });
         if (error) throw error;
         const { data: ud } = supabase.storage.from("content").getPublicUrl(fn);
@@ -126,28 +132,40 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
             {images.map((img, idx) => (
-              <div key={img.id} className="group relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
+              <div key={img.id} className="group bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
                 {album.type === "video" ? (
-                  <a href={img.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative bg-black">
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                      <Play className="w-10 h-10 text-pink-400 group-hover:text-pink-500 group-hover:scale-110 transition-all" />
-                      <ExternalLink className="w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <span className="absolute top-1 left-1 text-[9px] bg-black/60 text-white px-1 rounded">V{idx + 1}</span>
-                  </a>
+                  <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-3 p-2">
+                    <a
+                      href={img.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 text-center hover:scale-105 transition-transform"
+                    >
+                      <Play className="w-12 h-12 text-pink-500" />
+                      <span className="text-white text-xs font-medium">Video #{idx + 1}</span>
+                      <span className="text-pink-400 text-[10px] underline">Open in new tab ↗</span>
+                    </a>
+                    <button
+                      onClick={() => deleteImage(img.id)}
+                      disabled={deleting === img.id}
+                      className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-100"
+                      title="Delete">
+                      {deleting === img.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 ) : (
-                  <a href={img.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                  <a href={img.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">
                     <img src={img.url} alt={`#${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform" loading="lazy" />
+                    <button
+                      onClick={(e) => { e.preventDefault(); deleteImage(img.id); }}
+                      disabled={deleting === img.id}
+                      className="absolute top-1 right-1 p-1 rounded-lg bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100"
+                      title="Delete">
+                      {deleting === img.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                    </button>
+                    <span className="absolute bottom-1 left-1 text-[9px] bg-black/50 text-white px-1 rounded">#{idx + 1}</span>
                   </a>
                 )}
-                <button
-                  onClick={() => deleteImage(img.id)}
-                  disabled={deleting === img.id}
-                  className="absolute top-1 right-1 p-1 rounded-lg bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100"
-                  title="Delete">
-                  {deleting === img.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                </button>
-                <span className="absolute bottom-1 left-1 text-[9px] bg-black/50 text-white px-1 rounded">#{idx + 1}</span>
               </div>
             ))}
           </div>
