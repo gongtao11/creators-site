@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Lock, Loader2, Wallet, Copy, ArrowRight } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, Wallet, Copy, ArrowRight, Play, X } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -27,6 +27,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [txHash, setTxHash] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [payMessage, setPayMessage] = useState("");
+  const [videoPlayer, setVideoPlayer] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -157,11 +158,20 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           </div>
         ) : (
           images.length > 0 ? (
-            <div className={album.type === "video" ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"}>
-              {images.map((img) => (
+            <div className={album.type === "video" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"}>
+              {images.map((img, idx) => (
                 <div key={img.id} className="bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden">
                   {album.type === "video" ? (
-                    <video src={img.url} controls className="w-full aspect-video object-cover" preload="metadata" />
+                    <div className="relative aspect-video bg-black cursor-pointer group" onClick={() => setVideoPlayer({ url: img.url, title: `${album.title} #${idx + 1}` })}>
+                      {/* Thumbnail: try loading first frame, fallback to play icon */}
+                      <video src={img.url} className="w-full h-full object-cover opacity-60" preload="metadata" muted />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-pink-500/90 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                          <Play className="w-6 h-6 text-white ml-0.5" />
+                        </div>
+                      </div>
+                      <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">#{idx + 1}</span>
+                    </div>
                   ) : (
                     <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover hover:scale-105 transition-transform cursor-pointer" loading="lazy" />
                   )}
@@ -197,6 +207,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
       </main>
+
+      {/* Video Player Modal */}
+      {videoPlayer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setVideoPlayer(null)}>
+          <div className="w-full max-w-4xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-white text-sm font-medium truncate">{videoPlayer.title}</p>
+              <button onClick={() => setVideoPlayer(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <video src={videoPlayer.url} controls autoPlay className="w-full rounded-2xl shadow-2xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
