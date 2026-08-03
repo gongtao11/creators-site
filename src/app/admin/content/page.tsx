@@ -226,27 +226,30 @@ export default function AdminContentPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {albums.map(a => (
-              <div key={a.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-lg transition-all group">
-                <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
-                  {a.cover_url ? (
-                    <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-zinc-300"><FolderOpen className="w-12 h-12" /></div>
-                  )}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/60 text-white backdrop-blur">{a.type}</span>
-                    {a.price ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/80 text-white backdrop-blur">${a.price}</span> : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/80 text-white backdrop-blur">Free</span>}
-                    {!a.is_published && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/80 text-white backdrop-blur">Draft</span>}
+              <div key={a.id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-lg transition-all group cursor-pointer relative">
+                <Link href={`/admin/albums/${a.id}`} className="block">
+                  <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                    {a.cover_url ? (
+                      <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-zinc-300"><FolderOpen className="w-12 h-12" /></div>
+                    )}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-black/60 text-white backdrop-blur">{a.type}</span>
+                      {a.price ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/80 text-white backdrop-blur">${a.price}</span> : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/80 text-white backdrop-blur">Free</span>}
+                      {!a.is_published && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-500/80 text-white backdrop-blur">Draft</span>}
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                    <button onClick={() => openEdit(a)} className="p-2 rounded-lg bg-white text-zinc-700 hover:bg-pink-50 hover:text-pink-500" title="Edit"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => openUpload(a.id)} className="p-2 rounded-lg bg-white text-zinc-700 hover:bg-blue-50 hover:text-blue-500" title="Add photos"><Upload className="w-4 h-4" /></button>
-                    <button onClick={() => deleteAlbum(a.id)} className="p-2 rounded-lg bg-white text-zinc-700 hover:bg-red-50 hover:text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                  <div className="p-3">
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">{a.title}</p>
+                    {a.description && <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{a.description}</p>}
                   </div>
-                </div>
-                <div className="p-3">
-                  <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">{a.title}</p>
-                  {a.description && <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{a.description}</p>}
+                </Link>
+                {/* Action buttons overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 pointer-events-none">
+                  <button onClick={(e) => { e.stopPropagation(); openEdit(a); }} className="pointer-events-auto p-2 rounded-lg bg-white text-zinc-700 hover:bg-pink-50 hover:text-pink-500" title="Edit"><Edit className="w-4 h-4" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); openUpload(a.id); }} className="pointer-events-auto p-2 rounded-lg bg-white text-zinc-700 hover:bg-blue-50 hover:text-blue-500" title="Add photos"><Upload className="w-4 h-4" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); deleteAlbum(a.id); }} className="pointer-events-auto p-2 rounded-lg bg-white text-zinc-700 hover:bg-red-50 hover:text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
