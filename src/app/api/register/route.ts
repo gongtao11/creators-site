@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
 
-/**
- * POST /api/register
- * 鐢?service_role 缁曡繃閭欢棰戠巼闄愬埗鐩存帴娉ㄥ唽
- */
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -17,11 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 鐢?admin 鏉冮檺鍒涘缓鐢ㄦ埛 (缁曡繃閭欢闄愬埗)
+    
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // 鐩存帴纭閭
+      email_confirm: true, 
       user_metadata: { username },
     });
 
@@ -29,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // 鍒涘缓 profile
+    
     if (data.user) {
       await supabaseAdmin
         .from("profiles")
