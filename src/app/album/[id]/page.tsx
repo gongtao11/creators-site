@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Lock, Loader2, Play, Copy, ArrowRight, X, Eye, ExternalLink } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, Play, Copy, ArrowRight, X, Eye } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -172,24 +172,20 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         {/* UNLOCKED STATE */}
         {!isLocked && images.length > 0 && (
           album.type === "video" ? (
-            /* VIDEO: cards with play button -> open in new tab */
+            /* VIDEO: cards with play button -> embedded watch page */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {images.map((img, idx) => (
-                <a
+                <Link
                   key={img.id}
-                  href={img.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/watch?url=${encodeURIComponent(img.url)}&title=${encodeURIComponent(`${album!.title} #${idx + 1}`)}`}
                   className="group relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
                 >
                   <div className="w-16 h-16 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-pink-400 transition-all shadow-xl">
                     <Play className="w-7 h-7 text-white ml-0.5" />
                   </div>
                   <span className="text-white text-sm font-medium">Video #{idx + 1}</span>
-                  <span className="text-zinc-400 text-xs flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ExternalLink className="w-3 h-3" /> Open in new tab
-                  </span>
-                </a>
+                  <span className="text-zinc-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">Click to play</span>
+                </Link>
               ))}
             </div>
           ) : (
