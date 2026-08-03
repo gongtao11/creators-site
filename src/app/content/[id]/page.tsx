@@ -50,22 +50,15 @@ export default function ContentPage({
 
         
         if (contentData) {
+          // Check if user has an active purchase for this content
           const { data: purchases } = await supabase
             .from("purchases")
             .select("*")
             .eq("user_id", user.id)
-            .or(
-              `content_id.eq.${(contentData as Content).id},plan.neq.single`
-            );
+            .eq("content_id", (contentData as Content).id)
+            .eq("status", "active");
 
-          const hasActive =
-            purchases?.some(
-              (p: Purchase) =>
-                p.status === "active" &&
-                (!p.expires_at || new Date(p.expires_at) > new Date())
-            ) || false;
-
-          setHasAccess(hasActive || !(contentData as Content).price);
+          setHasAccess((purchases && purchases.length > 0) || !(contentData as Content).price);
         }
       }
 
