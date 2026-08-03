@@ -162,16 +162,20 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               {images.map((img, idx) => (
                 <div key={img.id} className="bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden">
                   {album.type === "video" ? (
-                    <div className="relative aspect-video bg-black cursor-pointer group" onClick={() => setVideoPlayer({ url: img.url, title: `${album.title} #${idx + 1}` })}>
-                      {/* Thumbnail: try loading first frame, fallback to play icon */}
-                      <video src={img.url} className="w-full h-full object-cover opacity-60" preload="metadata" muted />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-14 h-14 rounded-full bg-pink-500/90 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                          <Play className="w-6 h-6 text-white ml-0.5" />
+                    <button
+                      className="relative w-full aspect-video bg-gradient-to-br from-zinc-800 to-black cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all group"
+                      onClick={() => setVideoPlayer({ url: img.url, title: `${album.title} #${idx + 1}` })}
+                    >
+                      {/* Show first frame via poster-style img, or just icon */}
+                      <video src={img.url} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" preload="metadata" playsInline muted />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 rounded-full bg-pink-500 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                          <Play className="w-7 h-7 text-white ml-0.5" />
                         </div>
+                        <span className="text-white text-xs mt-2 font-medium">Click to play</span>
                       </div>
-                      <span className="absolute bottom-2 left-2 text-xs text-white bg-black/50 px-2 py-0.5 rounded">#{idx + 1}</span>
-                    </div>
+                      <span className="absolute bottom-2 left-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded">Video #{idx + 1}</span>
+                    </button>
                   ) : (
                     <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover hover:scale-105 transition-transform cursor-pointer" loading="lazy" />
                   )}
@@ -210,15 +214,31 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
       {/* Video Player Modal */}
       {videoPlayer && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setVideoPlayer(null)}>
-          <div className="w-full max-w-4xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4" onClick={() => setVideoPlayer(null)}>
+          <div className="w-full max-w-5xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
               <p className="text-white text-sm font-medium truncate">{videoPlayer.title}</p>
               <button onClick={() => setVideoPlayer(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <video src={videoPlayer.url} controls autoPlay className="w-full rounded-2xl shadow-2xl" />
+            <video
+              key={videoPlayer.url}
+              src={videoPlayer.url}
+              controls
+              autoPlay
+              playsInline
+              controlsList="nodownload"
+              className="w-full rounded-2xl shadow-2xl max-h-[80vh] bg-black"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                const errDiv = document.createElement('div');
+                errDiv.className = 'text-white text-center py-16';
+                errDiv.innerHTML = '<p class="text-xl mb-2">⚠️ Video cannot play</p><p class="text-sm text-zinc-400">This browser may not support the video format. Try downloading and playing locally.</p><a href="' + target.src + '" class="inline-block mt-4 px-6 py-2 rounded-full bg-pink-500 text-white text-sm">Download Video</a>';
+                target.parentNode?.appendChild(errDiv);
+              }}
+            />
           </div>
         </div>
       )}
