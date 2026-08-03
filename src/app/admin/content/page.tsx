@@ -87,23 +87,32 @@ export default function AdminContentPage() {
     if (!upload.albumId || upload.files.length === 0) return;
     setUpload(prev => ({ ...prev, uploading: true, progress: 0 }));
 
-    const formData = new FormData();
-    upload.files.forEach(f => formData.append("files", f));
-    formData.append("album_id", upload.albumId!);
+    const CHUNK_SIZE = 3; // Upload 3 files at a time to stay under size limits
+    const allFiles = upload.files;
+    let totalUploaded = 0;
+    let totalFailed = 0;
 
-    const int = setInterval(() => {
-      setUpload(prev => ({ ...prev, progress: Math.min(prev.progress + 8, 90) }));
-    }, 300);
+    for (let chunkStart = 0; chunkStart < allFiles.length; chunkStart += CHUNK_SIZE) {
+      const chunk = allFiles.slice(chunkStart, chunkStart + CHUNK_SIZE);
+      const formData = new FormData();
+      chunk.forEach(f => formData.append("files", f));
+      formData.append("album_id", upload.albumId!);
+      formData.append("start_index", String(chunkStart));
 
-    try {
-      const r = await fetch("/api/admin/album-images", { method: "POST", body: formData });
-      const d = await r.json();
-      clearInterval(int);
-      setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: d.uploaded || 0, failed: d.failed || 0 } }));
-    } catch {
-      clearInterval(int);
-      setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: 0, failed: upload.files.length } }));
+      const progressPct = Math.round((chunkStart / allFiles.length) * 95);
+      setUpload(prev => ({ ...prev, progress: progressPct }));
+
+      try {
+        const r = await fetch("/api/admin/album-images", { method: "POST", body: formData });
+        const d = await r.json();
+        totalUploaded += (d.uploaded || 0);
+        totalFailed += (d.failed || 0);
+      } catch {
+        totalFailed += chunk.length;
+      }
     }
+
+    setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: totalUploaded, failed: totalFailed } }));
   };
 
   const closeUpload = () => {
