@@ -15,7 +15,7 @@ export function ContentCard({ content }: Props) {
       href={`/content/${content.id}`}
       className="group block rounded-2xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:shadow-lg transition-all"
     >
-      {/* 棰勮鍥?*/}
+      {/* 预览图 */}
       <div className="relative aspect-[3/4] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {content.preview_url ? (
           <img
@@ -29,13 +29,13 @@ export function ContentCard({ content }: Props) {
           </div>
         )}
 
-        {/* 绫诲瀷鏍囩 */}
+        {/* 类型标签 */}
         <span className="absolute top-2 left-2 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
           <Icon className="w-3 h-3" />
           {content.type}
         </span>
 
-        {/* 浠樿垂/鍏嶈垂鏍囩 */}
+        {/* 付费/免费标签 */}
         <span
           className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur ${
             isFree
@@ -55,7 +55,7 @@ export function ContentCard({ content }: Props) {
         </span>
       </div>
 
-      {/* 淇℃伅 */}
+      {/* 信息 */}
       <div className="p-4">
         <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate">
           {content.title}
