@@ -96,14 +96,24 @@ export default function AdminContentPage() {
       setUpload(prev => ({ ...prev, progress: Math.round((i / allFiles.length) * 90) }));
 
       try {
-        const ext = file.name.split(".").pop() || "jpg";
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const fileName = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+        // Determine correct content type from extension
+        const mimeMap: Record<string, string> = {
+          mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime", avi: "video/x-msvideo",
+          mkv: "video/x-matroska", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+          gif: "image/gif", webp: "image/webp", heic: "image/heic", heif: "image/heif",
+        };
+        const contentType = file.type && file.type !== "application/octet-stream"
+          ? file.type
+          : (mimeMap[ext] || "application/octet-stream");
 
         // Upload directly to Supabase Storage (bypasses Netlify's 6MB limit)
         const { error: upErr } = await supabase.storage
           .from("content")
           .upload(fileName, file, {
-            contentType: file.type || "image/jpeg",
+            contentType,
             cacheControl: "3600",
             upsert: false,
           });
