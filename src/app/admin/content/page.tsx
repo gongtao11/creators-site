@@ -87,32 +87,54 @@ export default function AdminContentPage() {
     if (!upload.albumId || upload.files.length === 0) return;
     setUpload(prev => ({ ...prev, uploading: true, progress: 0 }));
 
-    const CHUNK_SIZE = 3; // Upload 3 files at a time to stay under size limits
     const allFiles = upload.files;
-    let totalUploaded = 0;
+    const urls: string[] = [];
     let totalFailed = 0;
 
-    for (let chunkStart = 0; chunkStart < allFiles.length; chunkStart += CHUNK_SIZE) {
-      const chunk = allFiles.slice(chunkStart, chunkStart + CHUNK_SIZE);
-      const formData = new FormData();
-      chunk.forEach(f => formData.append("files", f));
-      formData.append("album_id", upload.albumId!);
-      formData.append("start_index", String(chunkStart));
-
-      const progressPct = Math.round((chunkStart / allFiles.length) * 95);
-      setUpload(prev => ({ ...prev, progress: progressPct }));
+    for (let i = 0; i < allFiles.length; i++) {
+      const file = allFiles[i];
+      setUpload(prev => ({ ...prev, progress: Math.round((i / allFiles.length) * 90) }));
 
       try {
-        const r = await fetch("/api/admin/album-images", { method: "POST", body: formData });
-        const d = await r.json();
-        totalUploaded += (d.uploaded || 0);
-        totalFailed += (d.failed || 0);
+        const ext = file.name.split(".").pop() || "jpg";
+        const fileName = `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+        // Upload directly to Supabase Storage (bypasses Netlify's 6MB limit)
+        const { error: upErr } = await supabase.storage
+          .from("content")
+          .upload(fileName, file, {
+            contentType: file.type || "image/jpeg",
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (upErr) throw new Error(upErr.message);
+
+        const { data: urlData } = supabase.storage.from("content").getPublicUrl(fileName);
+        urls.push(urlData.publicUrl);
       } catch {
-        totalFailed += chunk.length;
+        totalFailed++;
+        continue;
       }
     }
 
-    setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: totalUploaded, failed: totalFailed } }));
+    // Register all uploaded URLs with the album
+    if (urls.length > 0) {
+      try {
+        await fetch("/api/admin/add-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ albumId: upload.albumId, urls, startIndex: 0 }),
+        });
+      } catch {}
+    }
+
+    setUpload(prev => ({
+      ...prev,
+      progress: 100,
+      uploading: false,
+      result: { uploaded: urls.length, failed: totalFailed },
+    }));
   };
 
   const closeUpload = () => {
