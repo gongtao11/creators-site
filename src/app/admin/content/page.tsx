@@ -13,9 +13,10 @@ export default function AdminContentPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create/edit album modal
+  // Modals
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState("");
@@ -25,59 +26,89 @@ export default function AdminContentPage() {
   const [formPublished, setFormPublished] = useState(true);
   const [formSaving, setFormSaving] = useState(false);
 
-  // Upload to album modal
-  const [uploadAlbumId, setUploadAlbumId] = useState<string | null>(null);
-  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadUploading, setUploadUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<{ uploaded: number; failed: number } | null>(null);
+  // Upload state - single object to avoid insertBefore errors
+  const [upload, setUpload] = useState<{
+    albumId: string | null;
+    files: File[];
+    uploading: boolean;
+    progress: number;
+    result: { uploaded: number; failed: number } | null;
+  }>({ albumId: null, files: [], uploading: false, progress: 0, result: null });
+
+  useEffect(() => { setMounted(true); }, []);
 
   const loadAlbums = useCallback(async () => {
+    if (!mounted) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { window.location.href = "/login"; return; }
     const { data: pd } = await supabase.from("profiles").select("*").eq("id", user.id).single();
     if (!(pd as Profile)?.is_admin) { window.location.href = "/"; return; }
     setProfile(pd as Profile);
-    try { const r = await fetch("/api/admin/albums"); if (r.ok) setAlbums((await r.json()).albums || []); } catch { }
+    try { const r = await fetch("/api/admin/albums"); if (r.ok) setAlbums((await r.json()).albums || []); } catch {}
     setLoading(false);
-  }, []);
+  }, [mounted]);
 
-  useEffect(() => { loadAlbums(); }, [loadAlbums]);
+  useEffect(() => { if (mounted) loadAlbums(); }, [mounted, loadAlbums]);
 
-  // Create / Edit album
   const openCreate = () => { setEditId(null); setFormTitle(""); setFormDesc(""); setFormType("photo"); setFormPrice(""); setFormPublished(true); setShowForm(true); };
   const openEdit = (a: Album) => { setEditId(a.id); setFormTitle(a.title); setFormDesc(a.description || ""); setFormType(a.type); setFormPrice(a.price ? String(a.price) : ""); setFormPublished(a.is_published); setShowForm(true); };
 
   const saveAlbum = async () => {
     if (!formTitle.trim()) return;
     setFormSaving(true);
-    const body = { id: editId, title: formTitle, description: formDesc, type: formType, price: formPrice ? parseFloat(formPrice) : null, is_published: formPublished };
-    const url = editId ? "/api/admin/albums" : "/api/admin/albums";
-    await fetch(url, { method: editId ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    setFormSaving(false); setShowForm(false); await loadAlbums();
+    await fetch("/api/admin/albums", {
+      method: editId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editId, title: formTitle, description: formDesc, type: formType, price: formPrice ? parseFloat(formPrice) : null, is_published: formPublished }),
+    });
+    setFormSaving(false);
+    setShowForm(false);
+    loadAlbums();
   };
 
-  const deleteAlbum = async (id: string) => { if (!confirm("Delete album and all its images?")) return; await fetch(`/api/admin/albums?id=${id}`, { method: "DELETE" }); await loadAlbums(); };
+  const deleteAlbum = async (id: string) => {
+    if (!confirm("Delete album and all its images?")) return;
+    await fetch(`/api/admin/albums?id=${id}`, { method: "DELETE" });
+    loadAlbums();
+  };
 
-  // Upload images
-  const openUpload = (albumId: string) => { setUploadAlbumId(albumId); setUploadFiles([]); setUploadResult(null); setUploadProgress(0); };
-  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => { const fs = Array.from(e.target.files || []); if (fs.length) setUploadFiles(fs); if (fileInputRef.current) fileInputRef.current.value = ""; };
+  const openUpload = (albumId: string) => {
+    setUpload({ albumId, files: [], uploading: false, progress: 0, result: null });
+  };
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fs = Array.from(e.target.files || []);
+    if (fs.length === 0) return;
+    setUpload(prev => ({ ...prev, files: fs }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const startUpload = async () => {
-    if (!uploadAlbumId || uploadFiles.length === 0) return;
-    setUploadUploading(true); setUploadProgress(0);
+    if (!upload.albumId || upload.files.length === 0) return;
+    setUpload(prev => ({ ...prev, uploading: true, progress: 0 }));
+
     const formData = new FormData();
-    uploadFiles.forEach(f => formData.append("files", f));
-    formData.append("album_id", uploadAlbumId);
-    const int = setInterval(() => setUploadProgress(p => Math.min(p + 7, 90)), 300);
+    upload.files.forEach(f => formData.append("files", f));
+    formData.append("album_id", upload.albumId!);
+
+    const int = setInterval(() => {
+      setUpload(prev => ({ ...prev, progress: Math.min(prev.progress + 8, 90) }));
+    }, 300);
+
     try {
       const r = await fetch("/api/admin/album-images", { method: "POST", body: formData });
       const d = await r.json();
-      clearInterval(int); setUploadProgress(100);
-      setUploadResult({ uploaded: d.uploaded, failed: d.failed });
-      await loadAlbums();
-    } catch { clearInterval(int); setUploadResult({ uploaded: 0, failed: uploadFiles.length }); }
-    setUploadUploading(false);
+      clearInterval(int);
+      setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: d.uploaded || 0, failed: d.failed || 0 } }));
+    } catch {
+      clearInterval(int);
+      setUpload(prev => ({ ...prev, progress: 100, uploading: false, result: { uploaded: 0, failed: upload.files.length } }));
+    }
+  };
+
+  const closeUpload = () => {
+    setUpload({ albumId: null, files: [], uploading: false, progress: 0, result: null });
+    setTimeout(() => loadAlbums(), 200);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>;
@@ -100,7 +131,7 @@ export default function AdminContentPage() {
         {/* Album Form Modal */}
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold">{editId ? "Edit" : "Create"} Album</h2><button onClick={() => setShowForm(false)} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"><X className="w-5 h-5" /></button></div>
               <div className="space-y-3">
                 <div><label className="text-xs font-medium text-zinc-500">Album Name</label><input value={formTitle} onChange={e => setFormTitle(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border mt-0.5 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50" placeholder="Summer Vibes" /></div>
@@ -125,16 +156,16 @@ export default function AdminContentPage() {
         )}
 
         {/* Upload Modal */}
-        {uploadAlbumId && (
+        {upload.albumId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold">Add Photos</h2><button onClick={() => setUploadAlbumId(null)} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"><X className="w-5 h-5" /></button></div>
-              {uploadResult ? (
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold">Add Photos</h2><button onClick={closeUpload} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"><X className="w-5 h-5" /></button></div>
+              {upload.result ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                  <p className="text-xl font-bold">{uploadResult.uploaded} uploaded</p>
-                  {uploadResult.failed > 0 && <p className="text-red-500 text-sm">{uploadResult.failed} failed</p>}
-                  <button onClick={() => { setUploadAlbumId(null); loadAlbums(); }} className="mt-4 px-6 py-2 rounded-full bg-pink-500 text-white text-sm font-medium">Done</button>
+                  <p className="text-xl font-bold">{upload.result.uploaded} uploaded</p>
+                  {upload.result.failed > 0 && <p className="text-red-500 text-sm">{upload.result.failed} failed</p>}
+                  <button onClick={closeUpload} className="mt-4 px-6 py-2 rounded-full bg-pink-500 text-white text-sm font-medium">Done</button>
                 </div>
               ) : (
                 <>
@@ -144,19 +175,28 @@ export default function AdminContentPage() {
                     <p className="text-sm text-zinc-500">Click to select files</p>
                     <p className="text-xs text-zinc-400 mt-1">Photos and videos supported</p>
                   </button>
-                  {uploadFiles.length > 0 && (
+                  {upload.files.length > 0 && (
                     <>
                       <div className="max-h-48 overflow-y-auto border rounded-xl divide-y dark:divide-zinc-700 mb-4">
-                        {uploadFiles.map((f, i) => (
+                        {upload.files.map((f, i) => (
                           <div key={i} className="flex items-center justify-between px-3 py-2 text-sm">
                             <span className="truncate text-zinc-700 dark:text-zinc-300">{i + 1}. {f.name}</span>
-                            <button onClick={() => setUploadFiles(p => p.filter((_, j) => j !== i))} className="p-1 text-zinc-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setUpload(prev => ({ ...prev, files: prev.files.filter((_, j) => j !== i) }))} className="p-1 text-zinc-400 hover:text-red-500 shrink-0"><X className="w-3.5 h-3.5" /></button>
                           </div>
                         ))}
                       </div>
-                      {uploadUploading && <div className="mb-4"><div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full"><div className="h-full bg-pink-500 transition-all" style={{ width: `${uploadProgress}%` }} /></div><p className="text-xs text-zinc-400 text-center mt-1">Uploading...</p></div>}
-                      <button onClick={startUpload} disabled={uploadUploading} className="w-full py-3 rounded-full font-medium text-sm text-white bg-gradient-to-r from-pink-500 to-rose-500 disabled:opacity-50 flex items-center justify-center gap-2">
-                        {uploadUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}{uploadUploading ? "Uploading..." : `Upload ${uploadFiles.length} Files`}
+                      {upload.uploading && (
+                        <div className="mb-4">
+                          <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-pink-500 transition-all duration-300" style={{ width: `${upload.progress}%` }} />
+                          </div>
+                          <p className="text-xs text-zinc-400 text-center mt-1">Uploading {upload.files.length} files...</p>
+                        </div>
+                      )}
+                      <button onClick={startUpload} disabled={upload.uploading}
+                        className="w-full py-3 rounded-full font-medium text-sm text-white bg-gradient-to-r from-pink-500 to-rose-500 disabled:opacity-50 flex items-center justify-center gap-2">
+                        {upload.uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {upload.uploading ? "Uploading..." : `Upload ${upload.files.length} Files`}
                       </button>
                     </>
                   )}
