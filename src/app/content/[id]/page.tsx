@@ -23,7 +23,7 @@ export default function ContentPage({
 
   useEffect(() => {
     async function load() {
-      // 加载内容
+      
       const { data: contentData } = await supabase
         .from("contents")
         .select("*")
@@ -32,7 +32,7 @@ export default function ContentPage({
 
       setContent(contentData as Content | null);
 
-      // 检查登录状态和权限
+      
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -46,7 +46,7 @@ export default function ContentPage({
 
         setProfile(profileData as Profile | null);
 
-        // 检查是否已购买
+        
         if (contentData) {
           const { data: purchases } = await supabase
             .from("purchases")
@@ -190,7 +190,7 @@ export default function ContentPage({
                 price={content.price}
                 contentType={content.type}
                 onPurchase={async () => {
-                  // TODO: 集成 Lemon Squeezy checkout
+                  
                   alert("Payment integration coming soon! Redirect to Lemon Squeezy checkout.");
                 }}
               />
