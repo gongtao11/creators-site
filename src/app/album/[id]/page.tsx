@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Lock, Loader2, Play, Copy, ArrowRight, X, Eye } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, Play, Copy, ArrowRight, X, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -20,6 +20,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  // Photo lightbox
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  // Video player
+  const [playingVideo, setPlayingVideo] = useState<{ url: string; title: string } | null>(null);
 
   const [showPay, setShowPay] = useState(false);
   const [wallets, setWallets] = useState<Record<string, string>>({});
@@ -73,6 +78,23 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return () => { cancelled = true; };
   }, [id]);
 
+  // Keyboard navigation for lightbox
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    if (lightboxIdx !== null) {
+      if (e.key === "Escape") setLightboxIdx(null);
+      if (e.key === "ArrowLeft" && lightboxIdx > 0) setLightboxIdx(lightboxIdx - 1);
+      if (e.key === "ArrowRight" && lightboxIdx < images.length - 1) setLightboxIdx(lightboxIdx + 1);
+    }
+    if (playingVideo) {
+      if (e.key === "Escape") setPlayingVideo(null);
+    }
+  }, [lightboxIdx, playingVideo, images.length]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleKey]);
+
   const cryptoList = Object.keys(wallets).filter(k => wallets[k]).length > 0
     ? Object.keys(wallets).filter(k => wallets[k])
     : ["BTC", "ETH", "USDT-TRC20", "USDT-ERC20"];
@@ -88,13 +110,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ albumId: id, contentTitle: album?.title, amount: album?.price, cryptoType: selectedCrypto, txHash: txHash.trim(), userEmail }),
       });
-      if (r.ok) {
-        setPayMessage("Submitted! I'll verify and you'll get access.");
-        setTimeout(() => setShowPay(false), 2500);
-      } else {
-        const err = await r.json();
-        setPayMessage(err.error || "Failed.");
-      }
+      if (r.ok) { setPayMessage("Submitted!"); setTimeout(() => setShowPay(false), 2500); }
+      else { const err = await r.json(); setPayMessage(err.error || "Failed."); }
     } catch { setPayMessage("Network error."); }
     setSubmitting(false);
   };
@@ -125,7 +142,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           {album.price ? <p className="text-pink-500 font-bold text-lg mt-2">${album.price}</p> : <p className="text-green-500 font-bold text-lg mt-2">Free</p>}
         </div>
 
-        {/* LOCKED STATE */}
+        {/* LOCKED */}
         {isLocked && (
           <>
             <div className="text-center py-12">
@@ -135,10 +152,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               <h2 className="text-xl font-bold mb-2">Locked Album</h2>
               <p className="text-zinc-500 mb-6">Unlock to view all {images.length} items</p>
               <button
-                onClick={() => {
-                  if (!userId) { window.location.href = `/login?redirect=/album/${id}`; return; }
-                  setShowPay(true);
-                }}
+                onClick={() => { if (!userId) { window.location.href = `/login?redirect=/album/${id}`; return; } setShowPay(true); }}
                 className="px-8 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:shadow-lg transition-all">
                 Unlock for ${album.price}
               </button>
@@ -148,9 +162,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 </p>
               )}
             </div>
-
             {images.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+              <div className={album.type === "video" ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2" : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2"}>
                 {images.slice(0, 12).map((img, idx) => (
                   <div key={img.id} className="relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-[3/4]">
                     <img src={img.url} alt="" className="w-full h-full object-cover blur-xl opacity-20" loading="lazy" />
@@ -159,49 +172,113 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
                   </div>
                 ))}
-                {images.length > 12 && (
-                  <div className="flex items-center justify-center bg-zinc-50 dark:bg-zinc-800 rounded-xl aspect-[3/4]">
-                    <p className="text-sm text-zinc-400">+{images.length - 12} more</p>
-                  </div>
-                )}
               </div>
             )}
           </>
         )}
 
-        {/* UNLOCKED STATE */}
+        {/* UNLOCKED GRID */}
         {!isLocked && images.length > 0 && (
           album.type === "video" ? (
-            /* VIDEO: cards with play button -> embedded watch page */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {images.map((img, idx) => (
-                <Link
+                <button
                   key={img.id}
-                  href={`/watch?url=${encodeURIComponent(img.url)}&title=${encodeURIComponent(`${album!.title} #${idx + 1}`)}`}
-                  className="group relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
+                  onClick={() => setPlayingVideo({ url: img.url, title: `${album.title} #${idx + 1}` })}
+                  className="group relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all flex flex-col items-center justify-center gap-3"
                 >
                   <div className="w-16 h-16 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-pink-400 transition-all shadow-xl">
                     <Play className="w-7 h-7 text-white ml-0.5" />
                   </div>
                   <span className="text-white text-sm font-medium">Video #{idx + 1}</span>
-                  <span className="text-zinc-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">Click to play</span>
-                </Link>
+                </button>
               ))}
             </div>
           ) : (
-            /* PHOTO: image grid */
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {images.map((img, idx) => (
-                <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer" className="block bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden group">
+                <button
+                  key={img.id}
+                  onClick={() => setLightboxIdx(idx)}
+                  className="block bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden group cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all"
+                >
                   <img src={img.url} alt={`#${idx + 1}`} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform" loading="lazy" />
-                </a>
+                </button>
               ))}
             </div>
           )
         )}
-
         {!isLocked && images.length === 0 && (
           <div className="text-center py-16 text-zinc-400"><p>No items in this album yet.</p></div>
+        )}
+
+        {/* === PHOTO LIGHTBOX === */}
+        {lightboxIdx !== null && (
+          <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => setLightboxIdx(null)}>
+            {/* Close button */}
+            <button onClick={() => setLightboxIdx(null)} className="absolute top-4 right-4 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+            {/* Counter */}
+            <span className="absolute top-4 left-4 z-20 text-white text-sm bg-black/50 px-3 py-1.5 rounded-full">
+              {lightboxIdx + 1} / {images.length}
+            </span>
+            {/* Prev */}
+            {lightboxIdx > 0 && (
+              <button onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx - 1); }}
+                className="absolute left-4 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            )}
+            {/* Image */}
+            <img
+              src={images[lightboxIdx].url}
+              alt={`${lightboxIdx + 1}`}
+              className="max-w-full max-h-full object-contain p-8 select-none"
+              onClick={(e) => e.stopPropagation()}
+              draggable={false}
+            />
+            {/* Next */}
+            {lightboxIdx < images.length - 1 && (
+              <button onClick={(e) => { e.stopPropagation(); setLightboxIdx(lightboxIdx + 1); }}
+                className="absolute right-4 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* === VIDEO PLAYER === */}
+        {playingVideo && (
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center" onClick={() => setPlayingVideo(null)}>
+            <div className="flex items-center justify-between w-full px-4 py-3">
+              <span className="text-white text-sm">{playingVideo.title}</span>
+              <button onClick={() => setPlayingVideo(null)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-4 w-full">
+              <video
+                key={playingVideo.url}
+                src={playingVideo.url}
+                controls
+                autoPlay
+                playsInline
+                className="max-w-full max-h-[80vh] rounded-lg"
+                onClick={(e) => e.stopPropagation()}
+                onError={(e) => {
+                  const el = e.currentTarget;
+                  el.style.display = "none";
+                  const p = el.parentElement;
+                  if (p) p.innerHTML = `<div class="text-center text-white p-8">
+                    <p class="text-xl mb-4">This video cannot play in the browser</p>
+                    <a href="${el.src}" class="inline-block px-6 py-3 rounded-full bg-pink-500 text-white text-sm font-medium hover:bg-pink-400 transition-colors" download>Download Video</a>
+                    <p class="text-zinc-400 text-xs mt-2">Right-click → Save Link As</p>
+                  </div>`;
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {/* Payment Modal */}
@@ -237,7 +314,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   placeholder="Paste your transaction hash" />
               </div>
               {payMessage && (
-                <div className={`mb-3 p-2 rounded-lg text-xs ${payMessage.includes("error") || payMessage.includes("Failed") || payMessage.includes("Network") ? "bg-red-50 dark:bg-red-950 text-red-600" : "bg-green-50 dark:bg-green-950 text-green-600"}`}>
+                <div className={`mb-3 p-2 rounded-lg text-xs ${payMessage.includes("Failed") || payMessage.includes("Network") || payMessage.includes("error") ? "bg-red-50 dark:bg-red-950 text-red-600" : "bg-green-50 dark:bg-green-950 text-green-600"}`}>
                   {payMessage}
                 </div>
               )}
