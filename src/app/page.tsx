@@ -17,7 +17,8 @@ export default function Home() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingContent, setLoadingContent] = useState(true);
 
-  // 鍔犺浇鐢ㄦ埛鐘舵€?  useEffect(() => {
+  
+  useEffect(() => {
     async function load() {
       const {
         data: { session },
@@ -42,7 +43,7 @@ export default function Home() {
     load();
   }, []);
 
-  // 鍔犺浇鍐呭
+  
   useEffect(() => {
     async function load() {
       try {
@@ -124,7 +125,8 @@ export default function Home() {
                 href="/login"
                 className="text-sm text-pink-500 hover:text-pink-600 font-medium"
               >
-                Sign in to see more 鈫?              </Link>
+                Sign in to see more →
+              </Link>
             )}
           </div>
 
@@ -219,7 +221,7 @@ export default function Home() {
                         key={f}
                         className="text-sm text-zinc-600 dark:text-zinc-400 flex items-center gap-2"
                       >
-                        <span className="text-green-500">鉁?/span> {f}
+                        <span className="text-green-500">✓</span> {f}
                       </li>
                     ))}
                   </ul>
