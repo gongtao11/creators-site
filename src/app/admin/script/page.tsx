@@ -51,7 +51,7 @@ export default function AdminScriptPage() {
 
       setProfile(profileData as Profile);
 
-      // 鍔犺浇璇濇湳
+      
       try {
         const res = await fetch("/api/script");
         if (res.ok) {
@@ -62,11 +62,11 @@ export default function AdminScriptPage() {
         console.error("Failed to load script:", error);
       }
 
-      // 鍔犺浇鍘熷 CSV 鏂囨湰鐢ㄤ簬缂栬緫
+      
       try {
         const res = await fetch("/api/script");
         if (res.ok) {
-          // 浠?entries 閲嶅缓 CSV
+          
           const data = await res.json();
           const entries = data.entries || [];
           const csv = [
@@ -103,7 +103,7 @@ export default function AdminScriptPage() {
         setStatus("success");
         setStatusMsg(`Saved! ${data.count} entries loaded.`);
 
-        // 鍒锋柊 entries
+        
         const refreshRes = await fetch("/api/script");
         if (refreshRes.ok) {
           const refreshData = await refreshRes.json();
@@ -224,7 +224,7 @@ export default function AdminScriptPage() {
                 onChange={(e) => setCsvText(e.target.value)}
                 className="w-full h-96 p-4 font-mono text-sm bg-transparent text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none"
                 placeholder="keywords,response,category
-&quot;hi,hello,hey&quot;,&quot;Hey there! 馃挄&quot;,&quot;greeting&quot;"
+&quot;hi,hello,hey&quot;,&quot;Hey there! 💕&quot;,&quot;greeting&quot;"
                 spellCheck={false}
               />
             </div>
@@ -280,7 +280,7 @@ export default function AdminScriptPage() {
                   the fallback when no other keywords match.
                 </p>
                 <p className="text-xs mt-2 text-pink-500">
-                  馃挕 Tip: Edit in Excel, then export as CSV and upload here.
+                  💡 Tip: Edit in Excel, then export as CSV and upload here.
                 </p>
               </div>
             </details>
