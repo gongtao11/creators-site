@@ -4,9 +4,10 @@ import { supabaseAdmin } from "@/lib/supabase-server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { contentId, contentTitle, amount, cryptoType, txHash, userEmail } = body;
+    const { contentId, albumId, contentTitle, amount, cryptoType, txHash, userEmail } = body;
+    const targetId = albumId || contentId;
 
-    if (!contentId || !amount || !cryptoType || !txHash) {
+    if (!targetId || !amount || !cryptoType || !txHash) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       .from("purchases")
       .insert({
         user_id: user.id,
-        content_id: contentId,
+        content_id: targetId,
         content_title: contentTitle,
         plan: "single",
         status: "pending",
