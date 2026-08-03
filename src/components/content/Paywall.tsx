@@ -41,7 +41,7 @@ export function Paywall({ contentTitle, price, contentType, onPurchase }: Props)
           ${price}
         </div>
         <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          One-time purchase 鈥?Lifetime access
+          One-time purchase • Lifetime access
         </div>
       </div>
 
