@@ -148,10 +148,10 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
             {images.map((img, idx) => (
               <div key={img.id} className="group relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
                 {album.type === "video" ? (
-                  <div className="w-full h-full relative bg-black">
-                    <video src={img.url} className="w-full h-full object-cover opacity-50" preload="metadata" />
+                  <div className="w-full h-full relative bg-black cursor-pointer">
+                    <video src={img.url} className="w-full h-full object-cover opacity-50" preload="metadata" playsInline muted />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Play className="w-8 h-8 text-white opacity-80" />
+                      <Play className="w-10 h-10 text-pink-400" />
                     </div>
                     <span className="absolute top-1 left-1 text-[10px] bg-black/60 text-white px-1 rounded">#{idx + 1}</span>
                   </div>
