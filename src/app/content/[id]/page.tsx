@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { Paywall, SubscriptionCTA } from "@/components/content/Paywall";
+import { Paywall } from "@/components/content/Paywall";
 import { ArrowLeft, Lock, Loader2, Eye } from "lucide-react";
 import Link from "next/link";
 import type { Content, Purchase, Profile } from "@/types";
@@ -19,6 +19,7 @@ export default function ContentPage({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [content, setContent] = useState<Content | null>(null);
   const [hasAccess, setHasAccess] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function ContentPage({
           .single();
 
         setProfile(profileData as Profile | null);
+        setUserEmail(user.email || "");
 
         
         if (contentData) {
@@ -186,17 +188,13 @@ export default function ContentPage({
           content.price && (
             <>
               <Paywall
+                contentId={content.id}
                 contentTitle={content.title}
                 price={content.price}
                 contentType={content.type}
-                onPurchase={async () => {
-                  
-                  alert("Payment integration coming soon! Redirect to Lemon Squeezy checkout.");
-                }}
+                userEmail={userEmail}
+                onPurchased={() => window.location.reload()}
               />
-              <div className="mt-8">
-                <SubscriptionCTA />
-              </div>
             </>
           )
         )}
