@@ -1,37 +1,82 @@
 import fs from "fs";
 import path from "path";
-import Papa from "papaparse";
 import type { ScriptEntry } from "@/types";
 
 const SCRIPT_PATH = path.join(process.cwd(), "data", "script.csv");
 
-// 鍐呭瓨缂撳瓨
+// 内存缓存
 let cachedEntries: ScriptEntry[] | null = null;
 
-interface CsvRow {
-  keywords: string;
-  response: string;
-  category: string;
+/**
+ * 简单 CSV 解析器（不依赖任何第三方库）
+ * 支持双引号包裹的字段、逗号分隔
+ */
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        // 双引号转义："" 表示一个字面引号
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current.trim());
+  return result;
 }
 
 /**
- * 瑙ｆ瀽 CSV 璇濇湳鏂囦欢锛岃繑鍥炵粨鏋勫寲鐨勬潯鐩垪琛? */
+ * 解析 CSV 话术文件，返回结构化的条目列表
+ */
 export function loadScript(): ScriptEntry[] {
   if (cachedEntries) return cachedEntries;
 
   const raw = fs.readFileSync(SCRIPT_PATH, "utf-8");
-  const parsed = Papa.parse<CsvRow>(raw, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim(),
-  });
+  const lines = raw.split("\n").filter((line) => line.trim());
+  if (lines.length < 2) {
+    cachedEntries = [];
+    return [];
+  }
+
+  // 第一行是 header: keywords,response,category
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const keywordIdx = headers.indexOf("keywords");
+  const responseIdx = headers.indexOf("response");
+  const categoryIdx = headers.indexOf("category");
 
   const entries: ScriptEntry[] = [];
 
-  for (const row of parsed.data) {
-    if (!row.keywords || !row.response) continue;
+  for (let i = 1; i < lines.length; i++) {
+    const fields = parseCsvLine(lines[i]);
 
-    const keywords = row.keywords
+    const keywordsStr = fields[keywordIdx];
+    const response = fields[responseIdx];
+    const category = fields[categoryIdx];
+
+    if (!keywordsStr || !response) continue;
+
+    const keywords = keywordsStr
       .split(",")
       .map((k) => k.trim().toLowerCase())
       .filter(Boolean);
@@ -40,12 +85,13 @@ export function loadScript(): ScriptEntry[] {
 
     entries.push({
       keywords,
-      response: row.response.trim(),
-      category: row.category?.trim() || "uncategorized",
+      response: response.trim(),
+      category: category?.trim() || "uncategorized",
     });
   }
 
-  // 鎶?default 鏉＄洰鎺掑埌鏈€鍚?  const defaultIdx = entries.findIndex(
+  // 把 default 条目排到最后
+  const defaultIdx = entries.findIndex(
     (e) => e.keywords.length === 1 && e.keywords[0] === "default"
   );
   if (defaultIdx > -1) {
@@ -58,7 +104,7 @@ export function loadScript(): ScriptEntry[] {
 }
 
 /**
- * 鍒锋柊缂撳瓨锛堜笂浼犳柊 CSV 鍚庤皟鐢級
+ * 刷新缓存（上传新 CSV 后调用）
  */
 export function reloadScript(): ScriptEntry[] {
   cachedEntries = null;
@@ -66,13 +112,14 @@ export function reloadScript(): ScriptEntry[] {
 }
 
 /**
- * 鑾峰彇瀹屾暣 CSV 鍘熷鍐呭锛堢敤浜?LLM context锛? */
+ * 获取完整 CSV 原始内容（用于 LLM context）
+ */
 export function getScriptRawText(): string {
   return fs.readFileSync(SCRIPT_PATH, "utf-8");
 }
 
 /**
- * 鏇存柊璇濇湳鏂囦欢
+ * 更新话术文件
  */
 export function updateScript(csvContent: string): void {
   fs.writeFileSync(SCRIPT_PATH, csvContent, "utf-8");
