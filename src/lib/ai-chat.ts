@@ -1,26 +1,25 @@
 import { loadScript, getScriptRawText } from "./script-loader";
 import type { AiMatchResult } from "@/types";
 
-/**
- * 棰勫鐞嗙敤鎴锋秷鎭? */
+
 function normalize(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, "") // 鍘绘爣鐐?    .replace(/\s+/g, " ") // 鍚堝苟绌烘牸
+    .replace(/[^\w\s]/g, "") 
+    .replace(/\s+/g, " ") 
     .trim();
 }
 
-/**
- * 鍏抽敭璇嶅尮閰嶅紩鎿? */
+
 function keywordMatch(userMessage: string): AiMatchResult | null {
   const entries = loadScript();
   const normalized = normalize(userMessage);
 
-  // 鎸夐『搴忛亶鍘?(default 鍦ㄦ渶鍚?
+  
   for (const entry of entries) {
-    // 妫€鏌ユ槸鍚︽槸 default 鏉＄洰
+    
     if (entry.keywords.length === 1 && entry.keywords[0] === "default") {
-      continue; // 璺宠繃 default锛屾渶鍚庣粺涓€澶勭悊
+      continue; 
     }
 
     for (const keyword of entry.keywords) {
@@ -36,12 +35,10 @@ function keywordMatch(userMessage: string): AiMatchResult | null {
     }
   }
 
-  return null; // 娌℃湁鍖归厤
+  return null; 
 }
 
-/**
- * 鑾峰彇榛樿鍏滃簳鍥炲
- */
+
 function getDefaultResponse(): AiMatchResult | null {
   const entries = loadScript();
   const defaultEntry = entries.find(
@@ -59,9 +56,7 @@ function getDefaultResponse(): AiMatchResult | null {
   return null;
 }
 
-/**
- * Claude API 鍏滃簳
- */
+
 async function claudeFallback(userMessage: string): Promise<AiMatchResult | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
@@ -120,38 +115,31 @@ ${scriptContent}
   return null;
 }
 
-/**
- * 涓诲叆鍙ｏ細澶勭悊鐢ㄦ埛娑堟伅骞惰繑鍥?AI 鍥炲
- *
- * 浼樺厛绾э細
- * 1. 鍏抽敭璇嶇簿纭尮閰?(鍏嶈垂銆佸嵆鏃?
- * 2. Claude API 鍏滃簳   (闇€閰嶇疆 API Key)
- * 3. CSV default 琛?   (鏃?API Key 鏃剁殑鍏滃簳)
- */
+
 export async function generateReply(userMessage: string): Promise<AiMatchResult> {
-  // Step 1: 鍏抽敭璇嶅尮閰?  const keywordResult = keywordMatch(userMessage);
+  
+  const keywordResult = keywordMatch(userMessage);
   if (keywordResult) return keywordResult;
 
-  // Step 2: Claude API 鍏滃簳
+  
   const claudeResult = await claudeFallback(userMessage);
   if (claudeResult) return claudeResult;
 
-  // Step 3: 榛樿鍏滃簳
+  
   const defaultResult = getDefaultResponse();
   if (defaultResult) return defaultResult;
 
-  // 鏋佺鎯呭喌锛氭病鏈変换浣曞厹搴?  return {
+  
+  return {
     matched: false,
-    response: "Thanks for your message! I'll get back to you soon 馃槝",
+    response: "Thanks for your message! I'll get back to you soon 😘",
     triggerKeyword: null,
     category: "system-fallback",
     source: "default",
   };
 }
 
-/**
- * 绠€鍗曠増鏈細浠呭叧閿瘝鍖归厤 + default锛屼笉璋冪敤 LLM
- * 閫傚悎娴嬭瘯鏈熸垨涓嶆兂鐢?AI API 鏃? */
+
 export function generateReplySync(userMessage: string): AiMatchResult {
   const keywordResult = keywordMatch(userMessage);
   if (keywordResult) return keywordResult;
@@ -161,7 +149,7 @@ export function generateReplySync(userMessage: string): AiMatchResult {
 
   return {
     matched: false,
-    response: "Thanks for your message! I'll get back to you soon 馃槝",
+    response: "Thanks for your message! I'll get back to you soon 😘",
     triggerKeyword: null,
     category: "system-fallback",
     source: "default",
