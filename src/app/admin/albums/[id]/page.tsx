@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, Image, Video, Upload, X, Play } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
@@ -148,7 +148,13 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
             {images.map((img, idx) => (
               <div key={img.id} className="group relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
                 {album.type === "video" ? (
-                  <video src={img.url} className="w-full h-full object-cover" />
+                  <div className="w-full h-full relative bg-black">
+                    <video src={img.url} className="w-full h-full object-cover opacity-50" preload="metadata" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Play className="w-8 h-8 text-white opacity-80" />
+                    </div>
+                    <span className="absolute top-1 left-1 text-[10px] bg-black/60 text-white px-1 rounded">#{idx + 1}</span>
+                  </div>
                 ) : (
                   <img src={img.url} alt={`#${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
                 )}
