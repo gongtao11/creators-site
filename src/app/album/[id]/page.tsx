@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useState, use } from "react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { Navbar } from "@/components/layout/Navbar";
+import { ArrowLeft, Lock, Loader2, Wallet, Copy, CheckCircle, ArrowRight } from "lucide-react";
+import type { Profile } from "@/types";
+
+interface Album { id: string; title: string; description?: string; type: string; cover_url?: string; price?: number; is_published: boolean; }
+interface AlbumImage { id: string; url: string; sort_order: number; }
+
+export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [userEmail, setUserEmail] = useState("");
+  const [album, setAlbum] = useState<Album | null>(null);
+  const [images, setImages] = useState<AlbumImage[]>([]);
+  const [hasAccess, setHasAccess] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Payment
+  const [showPay, setShowPay] = useState(false);
+  const [wallets, setWallets] = useState<Record<string, string>>({});
+  const [selectedCrypto, setSelectedCrypto] = useState("USDT");
+  const [txHash, setTxHash] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [payMessage, setPayMessage] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: pd } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        setProfile(pd as Profile);
+        setUserEmail(user.email || "");
+      }
+
+      // Load album
+      const { data: albums } = await supabase.from("albums").select("*").eq("id", id);
+      if (albums && albums.length > 0) {
+        setAlbum(albums[0] as Album);
+        if (!albums[0].price) setHasAccess(true);
+      }
+
+      // Check purchase
+      if (user && albums && albums.length > 0 && albums[0].price) {
+        const { data: purchases } = await supabase.from("purchases").select("*").eq("user_id", user.id).eq("content_id", id).eq("status", "active");
+        if (purchases && purchases.length > 0) setHasAccess(true);
+      }
+
+      // Load images
+      const { data: imgs } = await supabase.from("album_images").select("*").eq("album_id", id).order("sort_order", { ascending: true });
+      setImages((imgs as AlbumImage[]) || []);
+
+      // Load wallets
+      try {
+        const r = await fetch("/api/admin/wallet");
+        if (r.ok) { const d = await r.json(); if (d.wallets) setWallets(d.wallets); }
+      } catch { }
+
+      setLoading(false);
+    })();
+  }, [id]);
+
+  const walletAddress = wallets[selectedCrypto] || "";
+  const cryptoList = Object.keys(wallets).length > 0 ? Object.keys(wallets) : ["BTC", "ETH", "USDT"];
+  const icons: Record<string, string> = { BTC: "₿", ETH: "Ξ", USDT: "₮" };
+
+  const submitPayment = async () => {
+    if (!txHash.trim()) { setPayMessage("Enter transaction hash"); return; }
+    setSubmitting(true);
+    const r = await fetch("/api/purchase", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: id, contentTitle: album?.title, amount: album?.price, cryptoType: selectedCrypto, txHash: txHash.trim(), userEmail }),
+    });
+    if (r.ok) { setPayMessage("Submitted! I'll verify and you'll get access."); setTimeout(() => setShowPay(false), 2000); }
+    else { setPayMessage("Failed. Try again."); }
+    setSubmitting(false);
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-pink-500" /></div>;
+  if (!album) return <div className="min-h-screen flex items-center justify-center"><p>Album not found</p></div>;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar user={profile ? { id: profile.id, username: profile.username, isAdmin: profile.is_admin } : null} />
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+        <Link href="/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 mb-6"><ArrowLeft className="w-4 h-4" /> Back</Link>
+
+        {/* Header */}
+        <div className="mb-8">
+          <span className="inline-block text-xs font-medium px-2 py-1 rounded-full bg-pink-100 dark:bg-pink-950 text-pink-600 mb-3 capitalize">{album.type}</span>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{album.title}</h1>
+          {album.description && <p className="text-zinc-500 dark:text-zinc-400">{album.description}</p>}
+          {album.price ? <p className="text-pink-500 font-bold text-lg mt-2">${album.price}</p> : <p className="text-green-500 font-bold text-lg mt-2">Free</p>}
+        </div>
+
+        {!hasAccess && album.price ? (
+          /* Locked */
+          <div className="text-center py-16">
+            <div className="w-20 h-20 rounded-full bg-pink-100 dark:bg-pink-950 flex items-center justify-center mx-auto mb-6"><Lock className="w-10 h-10 text-pink-500" /></div>
+            <h2 className="text-xl font-bold mb-2">Locked Album</h2>
+            <p className="text-zinc-500 mb-6">Unlock this album to view all {images.length} items</p>
+            <button onClick={() => { if (!userEmail) { window.location.href = "/login?redirect=/album/" + id; return; } setShowPay(true); }}
+              className="px-8 py-3 rounded-full font-semibold text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:shadow-lg transition-all">
+              Unlock for ${album.price}
+            </button>
+            {!userEmail && <p className="text-sm text-zinc-400 mt-3"><Link href="/login" className="text-pink-500">Sign in</Link> to purchase</p>}
+          </div>
+        ) : (
+          /* Photo Wall */
+          images.length > 0 ? (
+            <div className={album.type === "video" ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"}>
+              {images.map((img) => (
+                <div key={img.id} className="bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden">
+                  {album.type === "video" ? (
+                    <video src={img.url} controls className="w-full aspect-video object-cover" />
+                  ) : (
+                    <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover hover:scale-105 transition-transform cursor-pointer" loading="lazy" />
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 text-zinc-400"><p>No images in this album yet.</p></div>
+          )
+        )}
+
+        {/* Payment Modal */}
+        {showPay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+              <h2 className="text-lg font-bold mb-4">Pay ${album.price} with Crypto</h2>
+              <div className="flex gap-1 mb-3 flex-wrap">{cryptoList.map(c => <button key={c} onClick={() => setSelectedCrypto(c)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${selectedCrypto === c ? "bg-pink-500 text-white" : "bg-zinc-100 dark:bg-zinc-800"}`}>{icons[c]} {c}</button>)}</div>
+              {walletAddress ? (
+                <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-3 mb-3">
+                  <p className="text-xs text-zinc-400 mb-1">Send ${album.price} {selectedCrypto} to:</p>
+                  <div className="flex items-center gap-2"><code className="flex-1 text-xs break-all font-mono">{walletAddress}</code><button onClick={() => { navigator.clipboard.writeText(walletAddress); }} className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-700"><Copy className="w-3.5 h-3.5" /></button></div>
+                </div>
+              ) : <p className="text-sm text-zinc-400 mb-3">Contact creator for payment info</p>}
+              <div className="mb-3"><label className="text-xs font-medium">Transaction Hash</label><input value={txHash} onChange={e => setTxHash(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border mt-0.5 bg-white dark:bg-zinc-800 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-pink-500/50" placeholder="0x... or tx ID" /></div>
+              {payMessage && <div className="mb-3 p-2 rounded-lg text-xs bg-green-50 dark:bg-green-950 text-green-600">{payMessage}</div>}
+              <div className="flex gap-2">
+                <button onClick={() => setShowPay(false)} className="flex-1 py-2.5 rounded-full text-sm border">Cancel</button>
+                <button onClick={submitPayment} disabled={submitting} className="flex-1 py-2.5 rounded-full text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-rose-500 disabled:opacity-50 flex items-center justify-center gap-1">
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />} Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
