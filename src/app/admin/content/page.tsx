@@ -24,7 +24,7 @@ export default function AdminContentPage() {
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 涓婁紶琛ㄥ崟
+  
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -60,7 +60,8 @@ export default function AdminContentPage() {
 
     setProfile(profileData as Profile);
 
-    // 閫氳繃 API 鍔犺浇锛堢粫杩?RLS锛?    try {
+    
+    try {
       const res = await fetch("/api/admin/content");
       if (res.ok) {
         const data = await res.json();
@@ -77,7 +78,7 @@ export default function AdminContentPage() {
     loadData();
   }, [loadData]);
 
-  // 閲嶇疆琛ㄥ崟
+  
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -90,13 +91,13 @@ export default function AdminContentPage() {
     setError("");
   };
 
-  // 鎵撳紑鏂板缓琛ㄥ崟
+  
   const openNew = () => {
     resetForm();
     setShowForm(true);
   };
 
-  // 鎵撳紑缂栬緫琛ㄥ崟
+  
   const openEdit = (c: Content) => {
     setTitle(c.title);
     setDescription(c.description || "");
@@ -109,7 +110,7 @@ export default function AdminContentPage() {
     setShowForm(true);
   };
 
-  // 澶勭悊鏂囦欢閫夋嫨
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -118,7 +119,8 @@ export default function AdminContentPage() {
     }
   };
 
-  // 涓婁紶鏂囦欢锛堣蛋鍚庣 API 缁曡繃 RLS锛?  const uploadFile = async (file: File): Promise<string> => {
+  
+  const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -132,7 +134,7 @@ export default function AdminContentPage() {
     return result.url;
   };
 
-  // 鎻愪氦琛ㄥ崟
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -141,7 +143,8 @@ export default function AdminContentPage() {
     try {
       let previewUrl = previewPreview;
 
-      // 涓婁紶鏂版枃浠?      if (previewFile) {
+      
+      if (previewFile) {
         previewUrl = await uploadFile(previewFile);
       }
 
@@ -155,7 +158,8 @@ export default function AdminContentPage() {
         is_published: isPublished,
       };
 
-      // 閫氳繃 API 鎿嶄綔锛堢粫杩?RLS锛?      if (editingId) {
+      
+      if (editingId) {
         const res = await fetch("/api/admin/content", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -184,7 +188,7 @@ export default function AdminContentPage() {
     }
   };
 
-  // 鍒犻櫎鍐呭
+  
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this?")) return;
 
@@ -235,7 +239,7 @@ export default function AdminContentPage() {
           </button>
         </div>
 
-        {/* 涓婁紶琛ㄥ崟寮圭獥 */}
+        {/* 上传表单弹窗 */}
         {showForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
@@ -261,7 +265,7 @@ export default function AdminContentPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* 绫诲瀷閫夋嫨 */}
+                {/* 类型选择 */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Type</label>
                   <div className="flex gap-2">
@@ -292,7 +296,7 @@ export default function AdminContentPage() {
                   </div>
                 </div>
 
-                {/* 鏍囬 */}
+                {/* 标题 */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Title *</label>
                   <input
@@ -301,11 +305,11 @@ export default function AdminContentPage() {
                     onChange={(e) => setTitle(e.target.value)}
                     required
                     className="w-full px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50"
-                    placeholder="Summer Vibes 馃寠"
+                    placeholder="Summer Vibes 🌊"
                   />
                 </div>
 
-                {/* 鎻忚堪 */}
+                {/* 描述 */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Description</label>
                   <textarea
@@ -317,10 +321,10 @@ export default function AdminContentPage() {
                   />
                 </div>
 
-                {/* 浠锋牸 */}
+                {/* 价格 */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">
-                    Price ($) <span className="text-zinc-400 font-normal">鈥?leave empty for free</span>
+                    Price ($) <span className="text-zinc-400 font-normal">— leave empty for free</span>
                   </label>
                   <input
                     type="number"
@@ -333,7 +337,7 @@ export default function AdminContentPage() {
                   />
                 </div>
 
-                {/* 棰勮鍥句笂浼?*/}
+                {/* 预览图上传 */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Preview Image</label>
                   <input
@@ -363,7 +367,7 @@ export default function AdminContentPage() {
                   )}
                 </div>
 
-                {/* 鍙戝竷鐘舵€?*/}
+                {/* 发布状态 */}
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium">
                     {isPublished ? (
@@ -391,7 +395,7 @@ export default function AdminContentPage() {
                   </button>
                 </div>
 
-                {/* 鎻愪氦 */}
+                {/* 提交 */}
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
@@ -417,7 +421,7 @@ export default function AdminContentPage() {
           </div>
         )}
 
-        {/* 鍐呭鍒楄〃 */}
+        {/* 内容列表 */}
         {contents.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
             <Image className="w-16 h-16 mx-auto mb-4 text-zinc-300 dark:text-zinc-600" />
@@ -440,7 +444,7 @@ export default function AdminContentPage() {
                 key={content.id}
                 className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 flex items-center gap-4"
               >
-                {/* 缂╃暐鍥?*/}
+                {/* 缩略图 */}
                 <div className="w-16 h-16 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0">
                   {content.preview_url ? (
                     <img
@@ -473,7 +477,7 @@ export default function AdminContentPage() {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-500 mt-0.5 capitalize">
-                    {content.type} {content.price ? `鈥?$${content.price}` : "鈥?Free"}
+                    {content.type} {content.price ? `• $${content.price}` : "• Free"}
                   </p>
                 </div>
 
