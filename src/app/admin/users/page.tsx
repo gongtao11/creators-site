@@ -110,9 +110,13 @@ function UsersContent() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${u.message_count > 0 ? "bg-blue-100 dark:bg-blue-950 text-blue-600" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}`}>
-                          {u.message_count}
-                        </span>
+                        <Link
+                          href={`/admin/contacts?user=${u.id}`}
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block cursor-pointer hover:opacity-80 transition-opacity ${u.message_count > 0 ? "bg-blue-100 dark:bg-blue-950 text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"}`}
+                          title="View conversation"
+                        >
+                          {u.message_count} ↗
+                        </Link>
                       </td>
                     </tr>
                   ))}
