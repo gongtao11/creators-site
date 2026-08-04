@@ -262,7 +262,11 @@ export default function AdminContentPage() {
                 <Link href={`/admin/albums/${a.id}`} className="block">
                   <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
                     {a.cover_url ? (
-                      <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover" />
+                      /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(a.cover_url) ? (
+                        <video src={a.cover_url} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                      ) : (
+                        <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover" />
+                      )
                     ) : (
                       <div className="flex items-center justify-center h-full text-zinc-300"><FolderOpen className="w-12 h-12" /></div>
                     )}
