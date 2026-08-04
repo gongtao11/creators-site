@@ -30,6 +30,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [wallets, setWallets] = useState<Record<string, string>>({});
   const [selectedCrypto, setSelectedCrypto] = useState("USDT-TRC20");
   const [txHash, setTxHash] = useState("");
+  const [payNote, setPayNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [payMessage, setPayMessage] = useState("");
 
@@ -108,7 +109,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     try {
       const r = await fetch("/api/purchase", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ albumId: id, contentTitle: album?.title, amount: album?.price, cryptoType: selectedCrypto, txHash: txHash.trim(), userEmail }),
+        body: JSON.stringify({ albumId: id, contentTitle: album?.title, amount: album?.price, cryptoType: selectedCrypto, txHash: txHash.trim(), userEmail, note: payNote.trim() }),
       });
       if (r.ok) { setPayMessage("Submitted!"); setTimeout(() => setShowPay(false), 2500); }
       else { const err = await r.json(); setPayMessage(err.error || "Failed."); }
@@ -313,6 +314,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <input value={txHash} onChange={e => setTxHash(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border mt-0.5 bg-white dark:bg-zinc-800 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-pink-500/50"
                   placeholder="Paste your transaction hash" />
+              </div>
+              <div className="mb-3">
+                <label className="text-xs font-medium">Message (optional)</label>
+                <textarea value={payNote} onChange={e => setPayNote(e.target.value)} rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border mt-0.5 bg-white dark:bg-zinc-800 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  placeholder="Leave a note or message for the creator..." />
               </div>
               {payMessage && (
                 <div className={`mb-3 p-2 rounded-lg text-xs ${payMessage.includes("Failed") || payMessage.includes("Network") || payMessage.includes("error") ? "bg-red-50 dark:bg-red-950 text-red-600" : "bg-green-50 dark:bg-green-950 text-green-600"}`}>
