@@ -163,50 +163,51 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               )}
             </div>
             {images.length > 0 && (
-              <div className={album.type === "video" ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2" : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2"}>
-                {images.slice(0, 12).map((img, idx) => (
-                  <div key={img.id} className="relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-[3/4]">
-                    <img src={img.url} alt="" className="w-full h-full object-cover blur-xl opacity-20" loading="lazy" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Eye className="w-6 h-6 text-white/50" />
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                {images.slice(0, 12).map((img, idx) => {
+                  const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(img.url);
+                  return (
+                    <div key={img.id} className={`relative bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden ${isVideo ? "aspect-video" : "aspect-[3/4]"}`}>
+                      <img src={img.url} alt="" className="w-full h-full object-cover blur-xl opacity-20" loading="lazy" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {isVideo ? <Play className="w-6 h-6 text-white/50" /> : <Eye className="w-6 h-6 text-white/50" />}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
         )}
 
-        {/* UNLOCKED GRID */}
+        {/* UNLOCKED GRID - auto-detect photo vs video per file */}
         {!isLocked && images.length > 0 && (
-          album.type === "video" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {images.map((img, idx) => (
-                <button
-                  key={img.id}
-                  onClick={() => setPlayingVideo({ url: img.url, title: `${album.title} #${idx + 1}` })}
-                  className="group relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all flex flex-col items-center justify-center gap-3"
-                >
-                  <div className="w-16 h-16 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 group-hover:bg-pink-400 transition-all shadow-xl">
-                    <Play className="w-7 h-7 text-white ml-0.5" />
-                  </div>
-                  <span className="text-white text-sm font-medium">Video #{idx + 1}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {images.map((img, idx) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {images.map((img, idx) => {
+              const isVideo = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(img.url);
+              if (isVideo) {
+                return (
+                  <button
+                    key={img.id}
+                    onClick={() => setPlayingVideo({ url: img.url, title: `${album.title} #${idx + 1}` })}
+                    className="group relative aspect-video bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all flex flex-col items-center justify-center gap-2"
+                  >
+                    <Play className="w-12 h-12 text-pink-500 group-hover:scale-110 transition-transform" />
+                    <span className="text-white text-xs font-medium">Video #{idx + 1}</span>
+                  </button>
+                );
+              }
+              return (
                 <button
                   key={img.id}
                   onClick={() => setLightboxIdx(idx)}
-                  className="block bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden group cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all"
+                  className="bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-pink-500 transition-all"
                 >
-                  <img src={img.url} alt={`#${idx + 1}`} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                  <img src={img.url} alt={`#${idx + 1}`} className="w-full aspect-[3/4] object-cover hover:scale-105 transition-transform" loading="lazy" />
                 </button>
-              ))}
-            </div>
-          )
+              );
+            })}
+          </div>
         )}
         {!isLocked && images.length === 0 && (
           <div className="text-center py-16 text-zinc-400"><p>No items in this album yet.</p></div>
