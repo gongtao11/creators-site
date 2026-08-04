@@ -45,7 +45,7 @@ export function Navbar({ user }: Props) {
           href="/"
           className="font-bold text-lg bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent"
         >
-          Creators
+          Exclusive
         </Link>
 
         {/* Desktop nav */}
