@@ -131,49 +131,34 @@ export default function AdminAlbumDetail({ params }: { params: Promise<{ id: str
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-            {images.map((img, idx) => (
+            {images.map((img, idx) => {
+              const isV = /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(img.url);
+              return (
               <div key={img.id} className="group bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden aspect-square">
-                {album.type === "video" ? (
-                  <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-3 p-2">
-                    <Link
-                      href={`/watch?url=${encodeURIComponent(img.url)}&title=${encodeURIComponent(`${album!.title} #${idx + 1}`)}`}
-                      className="flex flex-col items-center gap-2 text-center hover:scale-105 transition-transform"
-                    >
-                      <Play className="w-12 h-12 text-pink-500" />
-                      <span className="text-white text-xs font-medium">Video #{idx + 1}</span>
-                      <span className="text-pink-400 text-[10px] underline">Watch ↙</span>
-                    </Link>
-                    <a
-                      href={img.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-zinc-500 text-[9px] hover:text-zinc-300 flex items-center gap-0.5"
-                    >
-                      <ExternalLink className="w-2.5 h-2.5" /> Raw file
+                {isV ? (
+                  <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-2 p-2">
+                    <a href={img.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 text-center hover:scale-105 transition-transform">
+                      <Play className="w-10 h-10 text-pink-500" />
+                      <span className="text-white text-xs font-medium">V #{idx + 1}</span>
+                      <span className="text-pink-400 text-[9px]">Open ↗</span>
                     </a>
-                    <button
-                      onClick={() => deleteImage(img.id)}
-                      disabled={deleting === img.id}
-                      className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-100"
-                      title="Delete">
+                    <button onClick={() => deleteImage(img.id)} disabled={deleting === img.id}
+                      className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/40 text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-100">
                       {deleting === img.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 ) : (
                   <a href={img.url} target="_blank" rel="noopener noreferrer" className="block w-full h-full relative">
                     <img src={img.url} alt={`#${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform" loading="lazy" />
-                    <button
-                      onClick={(e) => { e.preventDefault(); deleteImage(img.id); }}
-                      disabled={deleting === img.id}
-                      className="absolute top-1 right-1 p-1 rounded-lg bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100"
-                      title="Delete">
+                    <button onClick={(e) => { e.preventDefault(); deleteImage(img.id); }} disabled={deleting === img.id}
+                      className="absolute top-1 right-1 p-1 rounded-lg bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-100">
                       {deleting === img.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                     </button>
                     <span className="absolute bottom-1 left-1 text-[9px] bg-black/50 text-white px-1 rounded">#{idx + 1}</span>
                   </a>
                 )}
               </div>
-            ))}
+            )})}
           </div>
         )}
       </main>
