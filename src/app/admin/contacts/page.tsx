@@ -118,26 +118,37 @@ function ContactsContent() {
               </div>
             </div>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto mb-4">
-              {selectedUser.messages.map((msg) => (
-                <div key={msg.id} className={`rounded-2xl px-4 py-3 ${msg.is_ai
-                  ? "bg-pink-50/50 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900 mr-8"
-                  : msg.sender_id === viewUser
-                    ? "bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 ml-8"
-                    : "bg-green-50/50 dark:bg-green-950/20 border border-green-100 dark:border-green-900 ml-8"
-                }`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                      msg.is_ai ? "bg-pink-100 dark:bg-pink-950 text-pink-600" :
-                      msg.sender_id === viewUser ? "bg-blue-100 dark:bg-blue-950 text-blue-600" :
-                      "bg-green-100 dark:bg-green-950 text-green-600"
-                    }`}>
-                      {msg.is_ai ? "AI" : msg.sender_id === viewUser ? "Fan" : "You"}
-                    </span>
-                    <span className="text-[10px] text-zinc-400">{new Date(msg.created_at).toLocaleString()}</span>
+              {selectedUser.messages.map((msg) => {
+                const isCreator = (msg.content || "").startsWith("[Creator]") || (msg.content || "").startsWith("[Creator reply]");
+                const displayContent = isCreator ? msg.content.replace(/^\[Creator( reply)?\]\s*/, "") : msg.content;
+                const isAi = msg.is_ai && !isCreator;
+                const isFan = !!msg.sender_id && !isCreator && !msg.is_ai;
+
+                return (
+                <div key={msg.id} className={`flex ${isCreator ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    isCreator
+                      ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-br-md"
+                      : isAi
+                        ? "bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-bl-md"
+                        : "bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-bl-md"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                        isCreator
+                          ? "bg-white/20 text-white"
+                          : isAi
+                            ? "bg-pink-100 dark:bg-pink-950 text-pink-600"
+                            : "bg-blue-100 dark:bg-blue-950 text-blue-600"
+                      }`}>
+                        {isCreator ? "You" : isAi ? "AI" : "Fan"}
+                      </span>
+                      <span className={`text-[10px] ${isCreator ? "text-white/70" : "text-zinc-400"}`}>{new Date(msg.created_at).toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
-              ))}
+              )})}
             </div>
             {/* Reply box */}
             <div className="flex gap-2 items-end">
