@@ -8,7 +8,6 @@ export async function GET() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(500);
-
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const enriched: any[] = [];
@@ -22,14 +21,12 @@ export async function GET() {
       }
       enriched.push({ ...msg, user_email: email });
     }
-
     return NextResponse.json({ messages: enriched });
   } catch {
     return NextResponse.json({ error: "Failed to load contacts" }, { status: 500 });
   }
 }
 
-// POST - admin replies to a user
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -39,23 +36,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "userId and content required" }, { status: 400 });
     }
 
-    // Get user to find email for the receiver
-    let receiverId = userId;
-    try {
-      const { data: u } = await supabaseAdmin.auth.admin.getUserById(userId);
-      if (u?.user?.id) receiverId = u.user.id;
-    } catch {}
-
+    // Insert reply: sender is the user's own ID (but receiver is the admin),
+    // marking is_creator flag via content prefix
     const { error } = await supabaseAdmin
       .from("messages")
       .insert({
-        sender_id: null,
-        receiver_id: receiverId,
-        content: content.trim(),
+        sender_id: userId,
+        receiver_id: userId,
+        content: "[Creator] " + content.trim(),
         is_ai: false,
       });
 
-    if (error) throw error;
+    if (error) {
+      // If FK constraint fails, try inserting without sender_id
+      const { error: e2 } = await supabaseAdmin
+        .from("messages")
+        .insert({
+          receiver_id: userId,
+          content: "[Creator reply] " + content.trim(),
+          is_ai: false,
+        });
+      if (e2) {
+        return NextResponse.json({ error: e2.message }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
