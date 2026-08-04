@@ -115,6 +115,7 @@ function PurchasesContent() {
                       <p className="font-medium text-zinc-700 dark:text-zinc-300">User: {p.user_email || "Unknown"}</p>
                       <p>Crypto: {p.crypto_type || "N/A"} &middot; ${p.amount || "N/A"}</p>
                       {p.tx_hash && <p className="font-mono truncate text-[11px]">TX: {p.tx_hash}</p>}
+                      {p.note && <p className="text-pink-500 dark:text-pink-400 font-medium mt-1 text-xs">Note: &ldquo;{p.note}&rdquo;</p>}
                       <p>{new Date(p.created_at).toLocaleString()}</p>
                     </div>
                   </div>
