@@ -10,26 +10,33 @@ import type { Profile, Message } from "@/types";
 
 export default function NewMessagePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadMessages, setLoadMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.href = "/login"; return; }
 
       const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
+        .from("profiles").select("*").eq("id", user.id).single();
       setProfile(profileData as Profile | null);
+
+      // Load chat history
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || "";
+        const res = await fetch(`/api/messages?token=${encodeURIComponent(token)}`);
+        if (res.ok) {
+          const d = await res.json();
+          // Get all messages for this user, flatten and sort
+          const allMsgs = (d.messages || []).sort(
+            (a: Message, b: Message) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          setLoadMessages(allMsgs);
+        }
+      } catch {}
+
       setLoading(false);
     }
     load();
@@ -51,7 +58,6 @@ export default function NewMessagePage() {
         user={{ id: profile.id, username: profile.username, isAdmin: profile.is_admin }}
       />
       <main className="flex-1 max-w-2xl mx-auto w-full flex flex-col">
-        {/* Chat header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <Link href="/messages" className="text-zinc-500 hover:text-zinc-700">
             <ArrowLeft className="w-5 h-5" />
@@ -64,10 +70,8 @@ export default function NewMessagePage() {
             <p className="text-xs text-green-500">Replies instantly 💋</p>
           </div>
         </div>
-
-        {/* Chat */}
         <div className="flex-1 overflow-hidden bg-white dark:bg-zinc-950">
-          <ChatWindow initialMessages={[]} currentUserId={profile.id} />
+          <ChatWindow initialMessages={loadMessages} currentUserId={profile.id} />
         </div>
       </main>
     </div>
