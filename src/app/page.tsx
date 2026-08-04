@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/layout/Navbar";
-import { Image, Video, Lock, Eye, ChevronDown } from "lucide-react";
+import { Image, Video, Lock, Eye, ChevronDown, MessageCircle } from "lucide-react";
 import type { Profile } from "@/types";
 
 interface Album {
@@ -85,8 +85,16 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0008]">
+    <div className="min-h-screen flex flex-col bg-[#0a0008] relative">
       <Navbar user={user} />
+
+      {/* Floating Message Me bubble */}
+      <Link href="/messages/new"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-pink-600 to-rose-500 text-white shadow-2xl shadow-pink-600/40 hover:scale-110 hover:shadow-pink-500/60 transition-all duration-300 animate-bounce group">
+        <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+        <span className="text-sm font-bold tracking-wide">MESSAGE ME</span>
+        <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+      </Link>
 
       {/* Hero with photo mosaic background */}
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
@@ -177,6 +185,24 @@ export default function Home() {
         <div className="absolute bottom-6 z-20 text-zinc-500 text-xs animate-bounce">
           <ChevronDown className="w-5 h-5 mx-auto" />
           <span className="block mt-1">Scroll</span>
+        </div>
+      </section>
+
+      {/* Message Me CTA */}
+      <section className="relative z-10 -mt-10 pb-8">
+        <div className="max-w-md mx-auto px-4">
+          <Link
+            href={`/messages/new`}
+            className="group flex items-center justify-center gap-4 w-full px-8 py-5 rounded-2xl bg-gradient-to-r from-pink-600 via-pink-500 to-rose-500 text-white font-bold text-lg shadow-2xl shadow-pink-600/40 hover:shadow-pink-500/60 hover:scale-[1.02] transition-all duration-300 animate-pulse hover:animate-none"
+          >
+            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <MessageCircle className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <span className="block text-sm font-normal opacity-80">DM me anytime</span>
+              <span className="block text-xl tracking-wide">MESSAGE ME NOW 💋</span>
+            </div>
+          </Link>
         </div>
       </section>
 
