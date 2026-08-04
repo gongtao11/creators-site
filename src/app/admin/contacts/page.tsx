@@ -4,83 +4,61 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { AuthGuard } from "@/components/layout/AuthGuard";
-import { ArrowLeft, MessageCircle, Mail, Clock, Send, Loader2, ChevronRight, ArrowRight } from "lucide-react";
+import { ArrowLeft, MessageCircle, Mail, Send, Loader2, ChevronRight } from "lucide-react";
 
 interface Message { id: string; sender_id: string | null; receiver_id: string;
   content: string; is_ai: boolean; created_at: string; user_email?: string; }
+interface Thread { userId: string; email: string; msgCount: number; messages: Message[]; lastDate: string; }
 
 export default function AdminContactsPage() {
-  return (
-    <AuthGuard requireAdmin fallbackPath="/">
-      <ContactsContent />
-    </AuthGuard>
-  );
+  return <AuthGuard requireAdmin fallbackPath="/"><ContactsContent /></AuthGuard>;
 }
 
 function ContactsContent() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Reply state per user
-  const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [viewUserId, setViewUserId] = useState<string | null>(null);
 
-  // View: "list" or a specific user's conversation
-  const [viewUser, setViewUser] = useState<string | null>(null);
-
-  const loadMessages = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/contacts");
       if (r.ok) {
         const d = await r.json();
-        setMessages(d.messages || []);
+        setThreads(d.threads || []);
       }
     } catch {}
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // Check URL params for pre-selected user
     const params = new URLSearchParams(window.location.search);
-    const userId = params.get("user");
-    if (userId) setViewUser(userId);
-    loadMessages();
-  }, [loadMessages]);
+    const uid = params.get("user");
+    if (uid) setViewUserId(uid);
+    loadData();
+  }, [loadData]);
 
-  // Group by user
-  const userMap = new Map<string, { email: string; messages: Message[]; lastDate: string }>();
-  for (const msg of messages) {
-    const key = msg.sender_id || "unknown";
-    if (!userMap.has(key)) {
-      userMap.set(key, { email: msg.user_email || key, messages: [], lastDate: "" });
-    }
-    const entry = userMap.get(key)!;
-    entry.messages.push(msg);
-    if (msg.created_at > entry.lastDate) entry.lastDate = msg.created_at;
-  }
+  const selectedThread = viewUserId ? threads.find(t => t.userId === viewUserId) : null;
 
-  const users = Array.from(userMap.entries()).map(([id, data]) => ({
-    id, ...data, msgCount: data.messages.length,
-    messages: data.messages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
-  }));
-
-  const selectedUser = viewUser ? users.find(u => u.id === viewUser) : null;
-
-  const handleReply = async (userId: string) => {
-    if (!replyText.trim()) return;
+  const handleReply = async () => {
+    if (!replyText.trim() || !viewUserId) return;
     setSending(true);
     try {
       await fetch("/api/admin/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, content: replyText.trim() }),
+        body: JSON.stringify({ userId: viewUserId, content: replyText.trim() }),
       });
       setReplyText("");
-      setReplyTo(null);
-      await loadMessages();
+      await loadData();
     } catch {}
     setSending(false);
+  };
+
+  // Keyboard submit
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); }
   };
 
   if (loading) return (
@@ -100,115 +78,115 @@ function ContactsContent() {
           <ArrowLeft className="w-3 h-3" /> Admin
         </Link>
 
-        {viewUser && selectedUser ? (
-          /* Single user conversation view */
+        {viewUserId && selectedThread ? (
           <>
-            <button onClick={() => setViewUser(null)} className="inline-flex items-center gap-1 text-sm text-pink-500 hover:text-pink-600 mb-4">
-              <ArrowLeft className="w-3 h-3" /> Back to all conversations
+            <button onClick={() => setViewUserId(null)} className="inline-flex items-center gap-1 text-sm text-pink-500 hover:text-pink-600 mb-4">
+              <ArrowLeft className="w-3 h-3" /> Back to all
             </button>
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border p-4 mb-3">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border p-4 mb-4">
+              <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
-                  {selectedUser.email[0]?.toUpperCase() || "?"}
+                  {selectedThread.email[0]?.toUpperCase() || "?"}
                 </div>
                 <div>
-                  <p className="font-bold text-sm">{selectedUser.email}</p>
-                  <p className="text-xs text-zinc-400">{selectedUser.msgCount} messages</p>
+                  <p className="font-bold text-sm">{selectedThread.email}</p>
+                  <p className="text-xs text-zinc-400">{selectedThread.msgCount} messages</p>
                 </div>
               </div>
             </div>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto mb-4">
-              {selectedUser.messages.map((msg) => {
-                const isCreator = (msg.content || "").startsWith("[Creator]") || (msg.content || "").startsWith("[Creator reply]");
-                const displayContent = isCreator ? msg.content.replace(/^\[Creator( reply)?\]\s*/, "") : msg.content;
+
+            {/* Messages */}
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto mb-4 px-1">
+              {selectedThread.messages.map((msg) => {
+                const isCreator = (msg.content || "").startsWith("[Creator]");
+                const displayContent = isCreator
+                  ? msg.content.slice("[Creator]".length).trim()
+                  : msg.content;
                 const isAi = msg.is_ai && !isCreator;
-                const isFan = !!msg.sender_id && !isCreator && !msg.is_ai;
 
                 return (
-                <div key={msg.id} className={`flex ${isCreator ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    isCreator
-                      ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-br-md"
-                      : isAi
-                        ? "bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900 rounded-bl-md"
-                        : "bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-bl-md"
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        isCreator
-                          ? "bg-white/20 text-white"
-                          : isAi
-                            ? "bg-pink-100 dark:bg-pink-950 text-pink-600"
-                            : "bg-blue-100 dark:bg-blue-950 text-blue-600"
-                      }`}>
-                        {isCreator ? "You" : isAi ? "AI" : "Fan"}
-                      </span>
-                      <span className={`text-[10px] ${isCreator ? "text-white/70" : "text-zinc-400"}`}>{new Date(msg.created_at).toLocaleString()}</span>
+                  <div key={msg.id} className={`flex flex-col ${isCreator ? "items-end" : "items-start"}`}>
+                    {/* Label */}
+                    <span className={`text-[10px] font-bold mb-0.5 px-2 ${
+                      isCreator ? "text-pink-500" : isAi ? "text-pink-400" : "text-blue-500"
+                    }`}>
+                      {isCreator ? "You" : isAi ? "AI" : selectedThread.email.split("@")[0]}
+                    </span>
+                    {/* Bubble */}
+                    <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+                      isCreator
+                        ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-br-sm shadow-md"
+                        : isAi
+                          ? "bg-pink-50 dark:bg-zinc-800 border border-pink-200 dark:border-pink-900 rounded-bl-sm"
+                          : "bg-blue-50 dark:bg-zinc-800 border border-blue-200 dark:border-blue-900 rounded-bl-sm"
+                    }`}>
+                      <p className={`text-sm whitespace-pre-wrap ${isCreator ? "text-white" : "text-zinc-800 dark:text-zinc-200"}`}>
+                        {displayContent}
+                      </p>
+                      <p className={`text-[9px] mt-1 ${isCreator ? "text-white/60 text-right" : "text-zinc-400"}`}>
+                        {new Date(msg.created_at).toLocaleString()}
+                      </p>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
                   </div>
-                </div>
-              )})}
+                );
+              })}
             </div>
-            {/* Reply box */}
-            <div className="flex gap-2 items-end">
+
+            {/* Reply input */}
+            <div className="flex gap-2 items-end bg-white dark:bg-zinc-900 rounded-2xl border p-3 sticky bottom-0">
               <textarea
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
+                onKeyDown={handleKey}
                 rows={2}
-                placeholder="Reply as yourself (not AI)..."
-                className="flex-1 px-3 py-2.5 rounded-xl border bg-white dark:bg-zinc-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                placeholder={`Reply to ${selectedThread.email}...`}
+                className="flex-1 px-3 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50"
               />
               <button
-                onClick={() => handleReply(viewUser)}
+                onClick={handleReply}
                 disabled={sending || !replyText.trim()}
-                className="shrink-0 px-4 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm font-medium disabled:opacity-50 flex items-center gap-1"
+                className="shrink-0 px-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm font-bold disabled:opacity-50 flex items-center gap-1.5 shadow-lg hover:shadow-pink-500/30 transition-all"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Send
+                Reply
               </button>
             </div>
           </>
         ) : (
-          /* Conversation list */
           <>
             <div className="flex items-center gap-3 mb-6">
               <h1 className="text-2xl font-bold">Fan Messages</h1>
-              <span className="text-sm text-zinc-400">{users.length} conversations</span>
+              <span className="text-sm text-zinc-400">{threads.length} conversations</span>
             </div>
 
-            {users.length === 0 ? (
+            {threads.length === 0 ? (
               <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-2xl border">
                 <MessageCircle className="w-12 h-12 mx-auto mb-3 text-zinc-300" />
                 <p className="text-zinc-500">No messages yet</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {users.sort((a, b) => new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime()).map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => setViewUser(u.id)}
-                    className="w-full text-left bg-white dark:bg-zinc-900 rounded-2xl border p-4 hover:border-pink-300 dark:hover:border-pink-700 transition-all group"
-                  >
+                {threads.sort((a, b) => b.lastDate.localeCompare(a.lastDate)).map((t) => (
+                  <button key={t.userId} onClick={() => setViewUserId(t.userId)}
+                    className="w-full text-left bg-white dark:bg-zinc-900 rounded-2xl border p-4 hover:border-pink-300 dark:hover:border-pink-700 transition-all group">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
-                          {u.email[0]?.toUpperCase() || "?"}
+                          {t.email[0]?.toUpperCase() || "?"}
                         </div>
                         <div>
                           <p className="font-semibold text-sm flex items-center gap-2">
-                            <Mail className="w-3.5 h-3.5 text-zinc-400" />
-                            {u.email}
+                            <Mail className="w-3.5 h-3.5 text-zinc-400" /> {t.email}
                           </p>
                           <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">
-                            {u.messages[u.messages.length - 1]?.content?.slice(0, 80)}
+                            {t.messages[t.messages.length - 1]?.content?.slice(0, 80)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <p className="text-xs text-zinc-500">{u.msgCount} msgs</p>
-                          <p className="text-[10px] text-zinc-400">{new Date(u.lastDate).toLocaleDateString()}</p>
+                          <p className="text-xs text-zinc-500">{t.msgCount} msgs</p>
+                          <p className="text-[10px] text-zinc-400">{new Date(t.lastDate).toLocaleDateString()}</p>
                         </div>
                         <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-pink-400 transition-colors" />
                       </div>
