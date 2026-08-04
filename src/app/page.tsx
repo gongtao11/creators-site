@@ -64,7 +64,11 @@ export default function Home() {
                 <Link key={a.id} href={`/album/${a.id}`} className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden hover:shadow-lg transition-all">
                   <div className="aspect-[3/4] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
                     {a.cover_url ? (
-                      <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      /\.(mp4|webm|mov|avi|mkv)(\?|$)/i.test(a.cover_url) ? (
+                        <video src={a.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" preload="metadata" muted playsInline />
+                      ) : (
+                        <img src={a.cover_url} alt={a.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      )
                     ) : (
                       <div className="flex items-center justify-center h-full text-zinc-300">{a.type === "video" ? <Video className="w-12 h-12" /> : <Image className="w-12 h-12" />}</div>
                     )}
