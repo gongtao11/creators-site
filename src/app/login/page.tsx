@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col">
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center">
-          <Link href="/" className="font-bold text-lg bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Creators</Link>
+          <Link href="/" className="font-bold text-lg bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">Exclusive</Link>
         </div>
       </nav>
       <main className="flex-1 flex items-center justify-center px-4 py-16">
