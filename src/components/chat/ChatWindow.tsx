@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { MessageBubble } from "./MessageBubble";
@@ -38,10 +38,14 @@ export function ChatWindow({ initialMessages = [], currentUserId }: Props) {
       setMessages((prev) => [...prev, tempUserMsg]);
 
       try {
+        const { supabase } = await import("@/lib/supabase");
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token || "";
+
         const res = await fetch("/api/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
+          body: JSON.stringify({ content, accessToken }),
         });
 
         if (!res.ok) throw new Error("Failed to send");
