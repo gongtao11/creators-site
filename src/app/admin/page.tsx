@@ -14,6 +14,7 @@ import {
   Loader2,
   Wallet,
   CheckCircle,
+  TrendingUp,
 } from "lucide-react";
 import type { Profile } from "@/types";
 
@@ -89,6 +90,20 @@ export default function AdminPage() {
       href: "/admin/wallet",
       icon: Wallet,
       color: "text-orange-500 bg-orange-50 dark:bg-orange-950",
+    },
+    {
+      title: "User List",
+      description: "View registered users, purchases & activity",
+      href: "/admin/users",
+      icon: Users,
+      color: "text-sky-500 bg-sky-50 dark:bg-sky-950",
+    },
+    {
+      title: "Fan Messages",
+      description: "Read all messages fans sent to AI",
+      href: "/admin/contacts",
+      icon: TrendingUp,
+      color: "text-indigo-500 bg-indigo-50 dark:bg-indigo-950",
     },
     {
       title: "Verify Purchases",
