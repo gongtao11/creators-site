@@ -40,7 +40,13 @@ function ContactsContent() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadMessages(); }, [loadMessages]);
+  useEffect(() => {
+    // Check URL params for pre-selected user
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("user");
+    if (userId) setViewUser(userId);
+    loadMessages();
+  }, [loadMessages]);
 
   // Group by user
   const userMap = new Map<string, { email: string; messages: Message[]; lastDate: string }>();
